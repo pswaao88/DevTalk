@@ -13,20 +13,19 @@ public class InMemoryMessageRepository implements MessageRepository {
 
     @Override
     public Message append(String sessionId, Message message){
-        List<Message> messages;
-        if(messagesBySession.containsKey(sessionId)){
-            messages = messagesBySession.get(sessionId);
-        }else{
-            messages = new ArrayList<>();
-        }
+        messagesBySession.putIfAbsent(sessionId, new ArrayList<>());
+        List<Message> messages = messagesBySession.get(sessionId);
         messages.add(message);
-        messagesBySession.put(sessionId, messages);
         return message;
     }
 
     @Override
-    public Optional<List<Message>> findAllBySessionId(String sessionId){
-        return Optional.ofNullable(messagesBySession.get(sessionId));
+    public List<Message> findAllBySessionId(String sessionId){
+        List<Message> messages = messagesBySession.get(sessionId);
+        if(messages == null){
+            return List.of();
+        }
+        return List.copyOf(messages);
     }
 
     @Override
