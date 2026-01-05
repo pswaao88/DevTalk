@@ -5,6 +5,6 @@ import java.util.Optional;
 
 public interface MessageRepository {
     Message append(String sessionId, Message message);
-    Optional<List<Message>> findAllBySessionId(String sessionId);
+    List<Message> findAllBySessionId(String sessionId);
     void deleteAllBySessionId(String sessionId);
 }
