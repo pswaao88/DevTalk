@@ -3,6 +3,7 @@ package com.devtalk.devtalk.api.controller.devtalk.message;
 import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
+import com.devtalk.devtalk.service.devtalk.message.MessageService;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -15,22 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/devtalk")
 public class MessageController {
+    private final MessageService messageService;
+
+    public MessageController(MessageService messageService){
+        this.messageService = messageService;
+    }
 
     @PostMapping("/sessions/{sessionId}/messages")
     public ResponseEntity<Message> sendMessage(@PathVariable("sessionId")String sessionId, @RequestBody Message message){
-        Session session = InMemoryStore.sessions.get(sessionId);
-        if (session == null) {
-            return ResponseEntity.notFound().build();
-        }
-        List<Message> messageList;
-        if(InMemoryStore.messagesBySession.containsKey(sessionId)){
-            messageList = InMemoryStore.messagesBySession.get(sessionId);
-            messageList.add(message);
-        }else{
-            messageList = new ArrayList<>();
-            messageList.add(message);
-            InMemoryStore.messagesBySession.put(sessionId, messageList);
-        }
-        return ResponseEntity.ok(message);
+        Message saved = messageService.append(sessionId, message);
+        return ResponseEntity.ok(saved);
     }
 }

@@ -2,6 +2,7 @@ package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
+import com.devtalk.devtalk.service.devtalk.session.SessionService;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,23 +15,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/devtalk/sessions")
 public class SessionController {
 
+    private final SessionService sessionService;
+
+    public SessionController(SessionService sessionService){
+        this.sessionService = sessionService;
+    }
+
     @GetMapping("/{sessionId}")
     public ResponseEntity<Session> getSession(@PathVariable("sessionId") String sessionId){
-        Session session = InMemoryStore.sessions.get(sessionId);
+        Session session = sessionService.getOrThrow(sessionId);
         return ResponseEntity.ok(session);
     }
 
     @PostMapping
     public ResponseEntity<Session> createSession(){
         String sessionId = UUID.randomUUID().toString();
-        Session session = new Session(sessionId);
-        InMemoryStore.sessions.put(sessionId, session);
-        return ResponseEntity.ok(session);
+        Session sessionBefore = new Session(sessionId);
+        Session sessionAfter = sessionService.create(sessionBefore);
+        return ResponseEntity.ok(sessionAfter);
     }
 
     @PostMapping("/{sessionId}/resolve")
     public ResponseEntity<Session> resolveSession(@PathVariable("sessionId")String sessionId){
-        Session session = InMemoryStore.sessions.get(sessionId);
+        Session session = sessionService.getOrThrow(sessionId);
         session.resolve();
         return ResponseEntity.ok(session);
     }
