@@ -1,0 +1,32 @@
+package com.devtalk.devtalk.service.devtalk.session;
+
+import com.devtalk.devtalk.domain.devtalk.session.Session;
+import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SessionService {
+    private final SessionRepository sessionRepository;
+
+    public SessionService(SessionRepository sessionRepository){
+        this.sessionRepository = sessionRepository;
+    }
+
+    public Session create(Session session){
+        return sessionRepository.save(session);
+    }
+
+    public Session getOrThrow(String sessionId){
+        Session session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new IllegalArgumentException("session not found"));
+        return session;
+    }
+
+    public boolean exist(String sessionId){
+        return sessionRepository.existsById(sessionId);
+    }
+
+    public void delete(String sessionId){
+        sessionRepository.deleteById(sessionId);
+    }
+}
