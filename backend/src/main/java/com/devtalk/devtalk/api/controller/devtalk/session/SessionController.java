@@ -1,13 +1,12 @@
-package com.devtalk.devtalk.controller.devtalk.session;
+package com.devtalk.devtalk.api.controller.devtalk.session;
 
-import com.devtalk.devtalk.controller.devtalk.InMemoryStore;
+import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

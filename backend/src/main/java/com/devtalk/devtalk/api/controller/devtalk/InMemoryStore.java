@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.controller.devtalk;
+package com.devtalk.devtalk.api.controller.devtalk;
 
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.session.Session;

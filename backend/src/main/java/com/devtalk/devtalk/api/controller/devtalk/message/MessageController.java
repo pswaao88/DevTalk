@@ -1,6 +1,6 @@
-package com.devtalk.devtalk.controller.devtalk.message;
+package com.devtalk.devtalk.api.controller.devtalk.message;
 
-import com.devtalk.devtalk.controller.devtalk.InMemoryStore;
+import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import java.util.ArrayList;

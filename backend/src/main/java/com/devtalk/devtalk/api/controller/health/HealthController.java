@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.controller.health;
+package com.devtalk.devtalk.api.controller.health;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
