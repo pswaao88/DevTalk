@@ -1,7 +1,10 @@
 package com.devtalk.devtalk.domain.devtalk.session;
 
+import java.util.Optional;
+
 public interface SessionRepository {
     Session save(Session session);
-    Session findById(String sessionId);
+    Optional<Session> findById(String sessionId);
     boolean existsById(String sessionId);
+    void deleteById(String sessionId);
 }
