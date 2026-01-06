@@ -14,6 +14,14 @@ Resolved는 문제를 해결했는가가 아니라,
 - Resolved는 자동 분석이나 AI 판단에 의해 결정되지 않는다.
 - Resolved는 문제의 성공·실패 여부를 판정하는 상태가 아니다.
 
+### Session 상태 정의
+Session은 다음 두 가지 상태 중 하나를 가진다.
+- **ACTIVE**: 사고 흐름이 진행 중인 상태
+- **RESOLVED**: 현재 시점에서 판단을 종료한 상태
+
+Session 상태는 현재의 판단 상태를 나타내며,  
+과거의 판단 이력을 의미하지 않는다.
+
 ### Resolved 적용 방식
 - 사용자는 특정 Session에 대해 직접 Resolved를 확정한다.
 - Resolved 확정 시 변경되는 것은 Session의 상태뿐이다.
@@ -21,7 +29,7 @@ Resolved는 문제를 해결했는가가 아니라,
 
 ### Resolved 토글
 - Session은 `ACTIVE ↔ RESOLVED` 상태 전환이 가능하다.
-- 사용자는 Resolved 이후에도 다시 Unresolved(Active) 상태로 되돌릴 수 있다.
+- 사용자는 Resolved 이후에도 다시 Active(Unresolved) 상태로 되돌릴 수 있다.
 - 상태 전환은 여러 번 발생할 수 있으며, 이는 자연스러운 개발 흐름으로 간주한다.
 
 ### Resolved 이후 채팅
