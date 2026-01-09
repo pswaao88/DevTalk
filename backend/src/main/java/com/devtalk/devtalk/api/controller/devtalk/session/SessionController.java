@@ -2,7 +2,8 @@ package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.service.devtalk.session.SessionService;
-import java.util.UUID;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,11 @@ public class SessionController {
     @PostMapping
     public ResponseEntity<Session> createSession(){
         return ResponseEntity.ok(sessionService.create());
+    }
+
+    @GetMapping()
+    public ResponseEntity<List<Session>> getSessionList(){
+        return ResponseEntity.ok(sessionService.getAllSession());
     }
 
     @PostMapping("/{sessionId}/resolve")
