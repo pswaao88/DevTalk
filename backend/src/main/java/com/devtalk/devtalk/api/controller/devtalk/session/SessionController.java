@@ -28,10 +28,7 @@ public class SessionController {
 
     @PostMapping
     public ResponseEntity<Session> createSession(){
-        String sessionId = UUID.randomUUID().toString();
-        Session sessionBefore = new Session(sessionId);
-        Session sessionAfter = sessionService.create(sessionBefore);
-        return ResponseEntity.ok(sessionAfter);
+        return ResponseEntity.ok(sessionService.create());
     }
 
     @PostMapping("/{sessionId}/resolve")
