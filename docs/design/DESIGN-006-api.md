@@ -55,9 +55,9 @@
 
 ---
 
-### reopen (RESOLVED → ACTIVE)
+### unresolved (RESOLVED → ACTIVE)
 
-- POST /api/devtalk/sessions/{sessionId}/reopen
+- POST /api/devtalk/sessions/{sessionId}/unresolved
 - response(200):
   { "sessionId": "...","content": "Session reopened" ,"status": "ACTIVE" }
 - 처리 시 SYSTEM 메시지 기록을 원칙으로 한다.
