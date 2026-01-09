@@ -38,4 +38,10 @@ public class SessionController {
         return ResponseEntity.ok(session);
     }
 
+    @PostMapping("/{sessionId}/unresolved")
+    public ResponseEntity<Session> unresolvedSession(@PathVariable("sessionId")String sessionId){
+        Session session = sessionService.getOrThrow(sessionId);
+        session.unresolved();
+        return ResponseEntity.ok(session);
+    }
 }
