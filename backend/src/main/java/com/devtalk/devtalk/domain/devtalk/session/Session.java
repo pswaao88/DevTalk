@@ -19,6 +19,10 @@ public class Session {
     public void resolve(){
         this.status = SessionStatus.RESOLVED;
     }
+
+    public void unresolved(){
+        this.status = SessionStatus.ACTIVE;
+    }
     // 필드에 대한 getter
     public String getSessionId() {
         return sessionId;
