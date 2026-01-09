@@ -2,6 +2,7 @@ package com.devtalk.devtalk.service.devtalk.session;
 
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,10 @@ public class SessionService {
         Session session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new IllegalArgumentException("session not found"));
         return session;
+    }
+
+    public List<Session> getAllSession(){
+        return sessionRepository.findAll();
     }
 
     public boolean exist(String sessionId){
