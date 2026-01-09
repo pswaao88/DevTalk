@@ -1,6 +1,5 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
-import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.service.devtalk.session.SessionService;
 import java.util.UUID;

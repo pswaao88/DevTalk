@@ -1,11 +1,7 @@
 package com.devtalk.devtalk.api.controller.devtalk.message;
 
-import com.devtalk.devtalk.api.controller.devtalk.InMemoryStore;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.service.devtalk.message.MessageService;
-import java.util.ArrayList;
-import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
