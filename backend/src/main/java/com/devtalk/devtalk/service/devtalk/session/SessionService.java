@@ -2,6 +2,7 @@ package com.devtalk.devtalk.service.devtalk.session;
 
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,7 +13,8 @@ public class SessionService {
         this.sessionRepository = sessionRepository;
     }
 
-    public Session create(Session session){
+    public Session create(){
+        Session session = new Session();
         return sessionRepository.save(session);
     }
 
