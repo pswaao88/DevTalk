@@ -2,6 +2,8 @@ package com.devtalk.devtalk.infra.persistence;
 
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -31,4 +33,8 @@ public class InMemorySessionRepository implements SessionRepository {
         sessions.remove(sessionId);
     }
 
+    @Override
+    public List<Session> findAll(){
+        return new ArrayList<>(sessions.values());
+    }
 }
