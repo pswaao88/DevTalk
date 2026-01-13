@@ -1,6 +1,7 @@
 package com.devtalk.devtalk.service.devtalk.session;
 
 import com.devtalk.devtalk.domain.devtalk.message.Message;
+import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
 import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
@@ -13,9 +14,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class SessionService {
     private final SessionRepository sessionRepository;
+    private final MessageRepository messageRepository;
 
-    public SessionService(SessionRepository sessionRepository){
+    public SessionService(SessionRepository sessionRepository, MessageRepository messageRepository){
         this.sessionRepository = sessionRepository;
+        this.messageRepository = messageRepository;
     }
 
     public Session create(){
@@ -44,12 +47,16 @@ public class SessionService {
     public Message resolve(String sessionId){
         Session session = getOrThrow(sessionId);
         session.resolve();
-        return new Message(UUID.randomUUID().toString(), MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.OK);
+        Message systemMessage = new Message(UUID.randomUUID().toString(), MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.OK);
+        session.updateLastUpdatedAt();
+        return messageRepository.append(sessionId, systemMessage);
     }
 
     public Message unresolve(String sessionId){
         Session session = getOrThrow(sessionId);
         session.unresolved();
-        return new Message(UUID.randomUUID().toString(), MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.OK);
+        Message systemMessage = new Message(UUID.randomUUID().toString(), MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.OK);
+        session.updateLastUpdatedAt();
+        return messageRepository.append(sessionId, systemMessage);
     }
 }
