@@ -2,6 +2,7 @@
 # Common / OS
 ############################################
 .DS_Store
+Thumbs.db
 *.log
 logs/
 
@@ -51,7 +52,7 @@ HELP.md
 build/
 bin/
 
-# keep wrapper jar
+# keep Gradle wrapper jar
 !gradle/wrapper/gradle-wrapper.jar
 
 # allow build/bin inside src for specific cases
@@ -79,10 +80,12 @@ bin/
 .env.*
 !.env.example
 
-# Spring Boot external config
-application-*.yml
-application-*.yaml
-application-*.properties
+############################################
+# Spring Boot (local / secret configs only)
+############################################
+application-local.yml
+application-secret.yml
+application-prod-secret.yml
 
 ############################################
 # LLM / AI related (local cache, temp)
