@@ -107,10 +107,12 @@ public class GeminiHttpClient implements LlmClient {
     /**
      * Gemini 요청 정의
      *
+     * - systemInstruction: 시스템 프롬프트
      * - contents: 대화 메시지들 (role + parts[text])
      * - generationConfig: temperature, maxOutputTokens
      */
     public record GeminiGenerateRequest(
+        Content systemInstruction,
         List<Content> contents,
         GenerationConfig generationConfig
     ) {
@@ -119,27 +121,25 @@ public class GeminiHttpClient implements LlmClient {
         public record GenerationConfig(Double temperature, Integer maxOutputTokens) {}
 
         public static GeminiGenerateRequest from(LlmRequest request) {
-            List<Content> contents = new ArrayList<>();
-
-            // 1) systemPrompt를 "system role" content로 넣는다.
+            Content systemInstruction = null;
             if (request.systemPrompt() != null && !request.systemPrompt().isBlank()) {
-                contents.add(new Content("system", List.of(new Part(request.systemPrompt()))));
+                systemInstruction = new Content(null, List.of(new Part(request.systemPrompt())));
             }
 
-            // 2) 컨텍스트 메시지들
+            List<Content> contents = new ArrayList<>();
             for (LlmMessage m : request.messages()) {
                 String role = switch (m.role()) {
                     case USER -> "user";
                     case AI -> "model";
-                    case SYSTEM -> "system";
+                    case SYSTEM -> "user";
                 };
                 contents.add(new Content(role, List.of(new Part(m.content()))));
             }
 
-            // 3) 옵션 (없으면 defaults)
             LlmOptions opt = (request.options() != null) ? request.options() : LlmOptions.defaults();
 
             return new GeminiGenerateRequest(
+                systemInstruction,
                 contents,
                 new GenerationConfig(opt.temperature(), opt.maxTokens())
             );
