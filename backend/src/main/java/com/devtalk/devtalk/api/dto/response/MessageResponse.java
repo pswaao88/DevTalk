@@ -1,0 +1,27 @@
+package com.devtalk.devtalk.api.dto.response;
+
+import com.devtalk.devtalk.domain.devtalk.message.Message;
+import com.devtalk.devtalk.domain.devtalk.message.MessageMarkers;
+import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
+import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
+import java.time.LocalDateTime;
+
+public record MessageResponse(
+    String messageId,
+    MessageRole role,
+    String content,
+    MessageMarkers markers,
+    MessageStatus status,
+    LocalDateTime createdAt) {
+
+    public static MessageResponse from(Message m){
+        return new MessageResponse(
+            m.getMessageId(),
+            m.getRole(),
+            m.getContent(),
+            m.getMarkers(),
+            m.getStatus(),
+            m.getCreatedAt()
+        );
+    }
+}
