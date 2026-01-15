@@ -70,3 +70,53 @@ bin/
 .settings/
 .springBeans
 .sts4-cache
+
+############################################
+# Environment / Secrets
+############################################
+# dotenv files
+.env
+.env.*
+!.env.example
+
+# Spring Boot external config
+application-*.yml
+application-*.yaml
+application-*.properties
+
+############################################
+# LLM / AI related (local cache, temp)
+############################################
+llm-cache/
+ai-cache/
+.prompt-cache/
+
+############################################
+# Docker
+############################################
+docker-compose.override.yml
+docker-compose.*.yml
+*.pid
+
+############################################
+# OS / Temp
+############################################
+tmp/
+temp/
+*.tmp
+
+############################################
+# Security / Keys
+############################################
+*.pem
+*.key
+*.crt
+*.p12
+*.keystore
+
+############################################
+# Test / Coverage
+############################################
+coverage/
+.nyc_output/
+jacoco/
