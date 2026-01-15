@@ -1,5 +1,6 @@
 package com.devtalk.devtalk.service.devtalk.message;
 
+import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
@@ -17,8 +18,9 @@ public class MessageService {
         this.sessionRepository = sessionRepository;
     }
 
-    public Message append(String sessionId, Message message){
+    public Message append(String sessionId, SendMessageRequest sendMessageRequest){
         verifySession(sessionId);
+        Message message = SendMessageRequest.toDomain(sendMessageRequest);
         Session session = sessionRepository.findById(sessionId).get();
         session.updateLastUpdatedAt();
         return messageRepository.append(sessionId, message);

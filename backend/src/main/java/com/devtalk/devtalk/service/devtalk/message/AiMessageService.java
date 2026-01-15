@@ -64,7 +64,6 @@ public final class AiMessageService {
 
         Message aiMessage = switch (result) {
             case LlmResult.Success s -> new Message(
-                messageId,
                 MessageRole.AI,
                 s.text(),
                 markers,
@@ -72,7 +71,6 @@ public final class AiMessageService {
             );
 
             case LlmResult.Failure f -> new Message(
-                messageId,
                 MessageRole.AI,
                 "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
                     + "\n(code=" + f.code() + ")",
