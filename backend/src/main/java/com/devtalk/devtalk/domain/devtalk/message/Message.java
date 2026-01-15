@@ -1,6 +1,7 @@
 package com.devtalk.devtalk.domain.devtalk.message;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class Message {
     private final String messageId;
@@ -10,8 +11,8 @@ public class Message {
     private final MessageStatus status;
     private final LocalDateTime createdAt;
 
-    public Message(String messageId, MessageRole role, String content, MessageMarkers markers ,MessageStatus status) {
-        this.messageId = messageId;
+    public Message(MessageRole role, String content, MessageMarkers markers ,MessageStatus status) {
+        this.messageId = UUID.randomUUID().toString();
         this.role = role;
         this.content = content;
         this.markers = markers;
