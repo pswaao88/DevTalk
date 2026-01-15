@@ -7,6 +7,8 @@ public class Session {
     private String sessionId;
     private String title;
     private SessionStatus status;
+    private String description;
+    private String aiSummary;
     private final LocalDateTime createdAt;
     private LocalDateTime lastUpdatedAt;
 
@@ -15,6 +17,8 @@ public class Session {
         this.sessionId = UUID.randomUUID().toString();
         this.title = "새 채팅";
         this.status = SessionStatus.ACTIVE;
+        this.description = "설명을 적어주세요.";
+        this.aiSummary = "";
         this.createdAt = LocalDateTime.now();
         this.lastUpdatedAt = LocalDateTime.now();
     }
@@ -39,6 +43,12 @@ public class Session {
     public SessionStatus getStatus() {
         return status;
     }
+
+    public String getDescription() { return description; }
+
+    public String getAiSummary() { return aiSummary; }
+
+    public LocalDateTime getLastUpdatedAt() { return lastUpdatedAt; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
