@@ -1,8 +1,10 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
+import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.service.devtalk.session.SessionService;
-import java.util.UUID;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,17 +30,21 @@ public class SessionController {
 
     @PostMapping
     public ResponseEntity<Session> createSession(){
-        String sessionId = UUID.randomUUID().toString();
-        Session sessionBefore = new Session(sessionId);
-        Session sessionAfter = sessionService.create(sessionBefore);
-        return ResponseEntity.ok(sessionAfter);
+        return ResponseEntity.ok(sessionService.create());
+    }
+
+    @GetMapping()
+    public ResponseEntity<List<Session>> getSessionList(){
+        return ResponseEntity.ok(sessionService.getAllSession());
     }
 
     @PostMapping("/{sessionId}/resolve")
-    public ResponseEntity<Session> resolveSession(@PathVariable("sessionId")String sessionId){
-        Session session = sessionService.getOrThrow(sessionId);
-        session.resolve();
-        return ResponseEntity.ok(session);
+    public ResponseEntity<Message> resolveSession(@PathVariable("sessionId")String sessionId){
+        return ResponseEntity.ok(sessionService.resolve(sessionId));
     }
 
+    @PostMapping("/{sessionId}/unresolved")
+    public ResponseEntity<Message> unresolvedSession(@PathVariable("sessionId")String sessionId){
+        return ResponseEntity.ok(sessionService.unresolve(sessionId));
+    }
 }

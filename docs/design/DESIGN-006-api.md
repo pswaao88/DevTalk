@@ -50,16 +50,16 @@
 
 - POST /api/devtalk/sessions/{sessionId}/resolve
 - response(200):
-  { "sessionId": "...", "status": "RESOLVED" }
+  { "sessionId": "...","content": "Session resolved" ,"status": "RESOLVED" }
 - 처리 시 SYSTEM 메시지 기록을 원칙으로 한다.
 
 ---
 
-### reopen (RESOLVED → ACTIVE)
+### unresolved (RESOLVED → ACTIVE)
 
-- POST /api/devtalk/sessions/{sessionId}/reopen
+- POST /api/devtalk/sessions/{sessionId}/unresolved
 - response(200):
-  { "sessionId": "...", "status": "ACTIVE" }
+  { "sessionId": "...","content": "Session reopened" ,"status": "ACTIVE" }
 - 처리 시 SYSTEM 메시지 기록을 원칙으로 한다.
 
 ---
@@ -72,7 +72,7 @@
 - request:
   { "content": "...", "markers": ["INSIGHT", "ATTEMPT"] }
 - response(200):
-  { "messageId": "...", "role": "USER", "status": "SUCCESS" }
+  { "messageId": "...", "role": "USER", "status": "SUCCESS", "markers": ["INSIGHT"], "createdAt": "..." }
 
 ---
 
@@ -114,7 +114,8 @@
   "messageId": "...",
   "role": "AI",
   "status": "SUCCESS",
-  "content": "..."
+  "content": "...",
+  "createdAt": "..."
   }
 
 - 실패 response(200):
@@ -122,7 +123,8 @@
   "messageId": "...",
   "role": "AI",
   "status": "FAILED",
-  "content": "LLM 응답 생성 실패"
+  "content": "LLM 응답 생성 실패",
+  "createdAt": "..."
   }
 
 ---

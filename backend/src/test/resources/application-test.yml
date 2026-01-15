@@ -1,0 +1,4 @@
+llm:
+  mode: mock
+  mock:
+    always-fail: false

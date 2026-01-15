@@ -19,6 +19,8 @@ public class MessageService {
 
     public Message append(String sessionId, Message message){
         verifySession(sessionId);
+        Session session = sessionRepository.findById(sessionId).get();
+        session.updateLastUpdatedAt();
         return messageRepository.append(sessionId, message);
     }
 
