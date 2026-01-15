@@ -1,5 +1,0 @@
-llm:
-  mode: gemini
-  gemini:
-    api-key: ${LLM_GEMINI_API_KEY:}
-    model: ${LLM_GEMINI_MODEL:}
