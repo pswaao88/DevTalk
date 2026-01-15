@@ -1,0 +1,19 @@
+llm:
+  mode: mock
+
+  mock:
+    always-fail: false
+
+  gemini:
+    base-url: https://generativelanguage.googleapis.com
+    connect-timeout-ms: 3000
+    read-timeout-ms: 15000
+
+    # api-key / model은 환경변수로만 관리
+
+devtalk:
+  prompt:
+    include-system: false
+    include-failed: false
+    include-ai: true
+    max-chars: 8000
