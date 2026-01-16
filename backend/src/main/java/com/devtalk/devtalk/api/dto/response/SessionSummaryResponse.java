@@ -8,6 +8,8 @@ public record SessionSummaryResponse(
         String sessionId,
         String title,
         SessionStatus status,
+        String description,
+        String aiSummary,
         LocalDateTime createdAt,
         LocalDateTime lastUpdatedAt
     ) {
@@ -16,6 +18,8 @@ public record SessionSummaryResponse(
                 session.getSessionId(),
                 session.getTitle(),
                 session.getStatus(),
+                session.getDescription(),
+                session.getAiSummary(),
                 session.getCreatedAt(),
                 session.getLastUpdatedAt()
             );
