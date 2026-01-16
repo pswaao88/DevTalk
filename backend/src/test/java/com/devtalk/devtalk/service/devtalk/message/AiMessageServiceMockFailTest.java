@@ -3,6 +3,7 @@ package com.devtalk.devtalk.service.devtalk.message;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
@@ -26,13 +27,13 @@ class AiMessageServiceMockFailTest {
         String sessionId = "session-fail";
 
         messageRepository.append(sessionId,
-            new Message("1", MessageRole.USER, "실패 테스트", null, MessageStatus.SUCCESS)
+            new Message(MessageRole.USER, "실패 테스트", null, MessageStatus.SUCCESS)
         );
 
-        Message ai = aiMessageService.generateAndSave(sessionId);
+        MessageResponse ai = aiMessageService.generateAndSave(sessionId);
 
-        assertEquals(MessageRole.AI, ai.getRole());
-        assertEquals(MessageStatus.FAILED, ai.getStatus());
-        assertTrue(ai.getContent().contains("실패"));
+        assertEquals(MessageRole.AI, ai.role());
+        assertEquals(MessageStatus.FAILED, ai.status());
+        assertTrue(ai.content().contains("실패"));
     }
 }
