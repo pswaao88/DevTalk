@@ -1,6 +1,8 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
+import com.devtalk.devtalk.api.dto.response.ResolveResponse;
+import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
@@ -42,12 +44,12 @@ public class SessionController {
     }
 
     @PostMapping("/{sessionId}/resolve")
-    public ResponseEntity<Message> resolveSession(@PathVariable("sessionId")String sessionId){
+    public ResponseEntity<ResolveWithMessageResponse> resolveSession(@PathVariable("sessionId")String sessionId){
         return ResponseEntity.ok(sessionService.resolve(sessionId));
     }
 
     @PostMapping("/{sessionId}/unresolved")
-    public ResponseEntity<Message> unresolvedSession(@PathVariable("sessionId")String sessionId){
+    public ResponseEntity<ResolveWithMessageResponse> unresolvedSession(@PathVariable("sessionId")String sessionId){
         return ResponseEntity.ok(sessionService.unresolve(sessionId));
     }
 }

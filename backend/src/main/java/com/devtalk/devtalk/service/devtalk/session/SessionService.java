@@ -1,6 +1,7 @@
 package com.devtalk.devtalk.service.devtalk.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
+import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
@@ -51,19 +52,23 @@ public class SessionService {
         sessionRepository.deleteById(sessionId);
     }
 
-    public Message resolve(String sessionId){
+    public ResolveWithMessageResponse resolve(String sessionId){
         Session session = getSession(sessionId);
         session.resolve();
         Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.SUCCESS);
         session.updateLastUpdatedAt();
-        return messageRepository.append(sessionId, systemMessage);
+        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+
+        return ResolveWithMessageResponse.from(session, savedMessage);
     }
 
-    public Message unresolve(String sessionId){
+    public ResolveWithMessageResponse unresolve(String sessionId){
         Session session = getSession(sessionId);
         session.unresolved();
         Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.SUCCESS);
         session.updateLastUpdatedAt();
-        return messageRepository.append(sessionId, systemMessage);
+
+        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+        return ResolveWithMessageResponse.from(session, savedMessage);
     }
 }
