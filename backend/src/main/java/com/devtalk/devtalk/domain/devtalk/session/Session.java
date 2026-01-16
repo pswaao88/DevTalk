@@ -13,9 +13,9 @@ public class Session {
     private LocalDateTime lastUpdatedAt;
 
     // 생성시에 createdAt 설정 및 id는 UUID 사용
-    public Session(){
+    public Session(String title){
         this.sessionId = UUID.randomUUID().toString();
-        this.title = "새 채팅";
+        this.title = (title == null) ? "새 채팅" : title;
         this.status = SessionStatus.ACTIVE;
         this.description = "설명을 적어주세요.";
         this.aiSummary = "";
