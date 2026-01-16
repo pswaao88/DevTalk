@@ -3,7 +3,7 @@ spring:
     name: devtalk
 
 llm:
-  mode: mock
+  mode: gemini
 
   mock:
     always-fail: false
