@@ -1,5 +1,7 @@
 package com.devtalk.devtalk.api.controller.devtalk.message;
 
+import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
+import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.service.devtalk.message.MessageService;
 import java.util.List;
@@ -21,13 +23,12 @@ public class MessageController {
     }
 
     @PostMapping("/{sessionId}/messages")
-    public ResponseEntity<Message> sendMessage(@PathVariable("sessionId")String sessionId, @RequestBody Message message){
-        Message saved = messageService.append(sessionId, message);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<MessageResponse> sendMessage(@PathVariable("sessionId")String sessionId, @RequestBody SendMessageRequest sendMessageRequest){
+        return ResponseEntity.ok(messageService.append(sessionId, sendMessageRequest));
     }
 
     @GetMapping("/{sessionId}/messages")
-    public ResponseEntity<List<Message>> getAllMessage(@PathVariable("sessionId")String sessionId){
+    public ResponseEntity<List<MessageResponse>> getAllMessage(@PathVariable("sessionId")String sessionId){
         return ResponseEntity.ok(messageService.getAll(sessionId));
     }
 }

@@ -3,6 +3,7 @@ package com.devtalk.devtalk.service.devtalk.message;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
@@ -31,13 +32,13 @@ class AiMessageServiceGeminiSmokeTest {
         String sessionId = "session-gemini";
 
         messageRepository.append(sessionId,
-            new Message("1", MessageRole.USER, "한 문장으로 답해줘", null, MessageStatus.SUCCESS)
+            new Message(MessageRole.USER, "한 문장으로 답해줘", null, MessageStatus.SUCCESS)
         );
 
-        Message ai = aiMessageService.generateAndSave(sessionId);
+        MessageResponse ai = aiMessageService.generateAndSave(sessionId);
 
-        assertEquals(MessageRole.AI, ai.getRole());
-        assertFalse(ai.getContent().isBlank());
+        assertEquals(MessageRole.AI, ai.role());
+        assertFalse(ai.content().isBlank());
     }
 }
 

@@ -1,5 +1,6 @@
 package com.devtalk.devtalk.service.devtalk.message;
 
+import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.domain.devtalk.message.MessageMarkers;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
@@ -31,7 +32,7 @@ public final class AiMessageService {
     }
 
     // 대화 컨텍스트 8000자로 유지해 전달하여 응답을 얻어냄
-    public Message generateAndSave(String sessionId) {
+    public MessageResponse generateAndSave(String sessionId) {
         // 1) 해당 세션의 전체 대화 내역 즉 로그를 가져옴
         List<Message> history = messageRepository.findAllBySessionId(sessionId);
 
@@ -64,7 +65,6 @@ public final class AiMessageService {
 
         Message aiMessage = switch (result) {
             case LlmResult.Success s -> new Message(
-                messageId,
                 MessageRole.AI,
                 s.text(),
                 markers,
@@ -72,7 +72,6 @@ public final class AiMessageService {
             );
 
             case LlmResult.Failure f -> new Message(
-                messageId,
                 MessageRole.AI,
                 "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
                     + "\n(code=" + f.code() + ")",
@@ -82,7 +81,7 @@ public final class AiMessageService {
         };
 
         // repository 시그니처에 맞게 append 사용
-        return messageRepository.append(sessionId, aiMessage);
+        return MessageResponse.from(messageRepository.append(sessionId, aiMessage));
     }
     // 어댑터 디자인 패턴 공부 필요
     private static final class DomainMessageAdapter implements PromptContextBuilder.SourceMessage {

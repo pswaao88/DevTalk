@@ -7,14 +7,18 @@ public class Session {
     private String sessionId;
     private String title;
     private SessionStatus status;
+    private String description;
+    private String aiSummary;
     private final LocalDateTime createdAt;
     private LocalDateTime lastUpdatedAt;
 
     // 생성시에 createdAt 설정 및 id는 UUID 사용
-    public Session(){
+    public Session(String title){
         this.sessionId = UUID.randomUUID().toString();
-        this.title = "새 채팅";
+        this.title = (title == null) ? "새 채팅" : title;
         this.status = SessionStatus.ACTIVE;
+        this.description = "설명을 적어주세요.";
+        this.aiSummary = "";
         this.createdAt = LocalDateTime.now();
         this.lastUpdatedAt = LocalDateTime.now();
     }
@@ -39,6 +43,12 @@ public class Session {
     public SessionStatus getStatus() {
         return status;
     }
+
+    public String getDescription() { return description; }
+
+    public String getAiSummary() { return aiSummary; }
+
+    public LocalDateTime getLastUpdatedAt() { return lastUpdatedAt; }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

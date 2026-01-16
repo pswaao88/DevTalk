@@ -1,5 +1,6 @@
 package com.devtalk.devtalk.api.controller.devtalk.llm;
 
+import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.service.devtalk.message.AiMessageService;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class LlmController {
     }
     // 이미 질문에 대한 메세지는 가장 최신 메세지로 들어갔기 때문에 따로 받을 필요 X
     @PostMapping("{sessionId}/ai/messages")
-    public ResponseEntity<Message> makeAiMessage(@PathVariable("sessionId")String sessionId){
+    public ResponseEntity<MessageResponse> makeAiMessage(@PathVariable("sessionId")String sessionId){
         return ResponseEntity.ok(aiMessageService.generateAndSave(sessionId));
     }
 }
