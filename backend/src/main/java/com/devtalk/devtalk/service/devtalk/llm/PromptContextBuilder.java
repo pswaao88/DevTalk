@@ -73,6 +73,38 @@ public final class PromptContextBuilder {
         return new ArrayList<>(deque);
     }
 
+
+    public String buildText(List<? extends SourceMessage> contextInOrder){
+        // null 체크
+        Objects.requireNonNull(contextInOrder, "contextInOrder must not be null");
+        // 컨텍스트용 헤더
+        String header = "[RECENT]\n";
+        int used = header.length();
+        // 최신순으로 메세지 저장
+        Deque<String> lines = new LinkedList<>();
+
+        for (int i = contextInOrder.size() - 1; i >= 0; i--) {
+            SourceMessage src = contextInOrder.get(i);
+            if (!shouldInclude(src)) continue;
+
+            String content = safe(src.content());
+            if (content.isEmpty()) continue;
+
+            String line = "[" + src.role() + "|" + src.status() + "] " + content + "\n\n";
+            int add = line.length();
+
+            if (used + add > policy.maxChars()) break;
+            // 시간순 유지
+            lines.addFirst(line);
+            used += add;
+        }
+        // 최종 길이 + 16으로 여유 공간 확보헤 쓸데없는 비용 제거
+        StringBuilder sb = new StringBuilder(used + 16);
+        sb.append(header);
+        for (String line : lines) sb.append(line);
+        return sb.toString();
+    }
+
     private boolean shouldInclude(SourceMessage m) {
         if (!policy.includeFailed() && m.status() == SourceStatus.FAILED) return false;
         if (!policy.includeSystem() && m.role() == LlmRole.SYSTEM) return false;
@@ -80,7 +112,15 @@ public final class PromptContextBuilder {
         return true;
     }
 
+    private String formatLine(SourceMessage src, String content) {
+        // v1: 포맷 단순 유지
+        return "[" + src.role() + "|" + src.status() + "] " + content + "\n\n";
+    }
+
     private static String safe(String s) {
-        return (s == null) ? "" : s;
+        if (s == null) return "";
+        String trimmed = s.trim();
+        // v1: 최소 정리
+        return trimmed;
     }
 }
