@@ -19,7 +19,7 @@ public class LlmController {
         this.aiMessageService = aiMessageService;
     }
     // 이미 질문에 대한 메세지는 가장 최신 메세지로 들어갔기 때문에 따로 받을 필요 X
-    @PostMapping("{sessionId}/ai/messages")
+    @PostMapping("/{sessionId}/ai/messages")
     public ResponseEntity<MessageResponse> makeAiMessage(@PathVariable("sessionId")String sessionId){
         return ResponseEntity.ok(aiMessageService.generateAndSave(sessionId));
     }
