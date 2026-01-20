@@ -6,6 +6,7 @@ import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
 import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;
 import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
 import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
+import com.devtalk.devtalk.service.devtalk.llm.LlmRole;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -128,10 +129,11 @@ public class GeminiHttpClient implements LlmClient {
 
             List<Content> contents = new ArrayList<>();
             for (LlmMessage m : request.messages()) {
+                if (m.role() == LlmRole.SYSTEM) continue;
                 String role = switch (m.role()) {
                     case USER -> "user";
                     case AI -> "model";
-                    case SYSTEM -> "user";
+                    default -> "user";
                 };
                 contents.add(new Content(role, List.of(new Part(m.content()))));
             }
