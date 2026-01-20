@@ -160,12 +160,14 @@ public class GeminiHttpClient implements LlmClient {
             Candidate c = candidates.get(0);
             if (c == null || c.content() == null || c.content().parts() == null) return null;
 
-            return c.content().parts().stream()
-                .filter(Objects::nonNull)
-                .map(Part::text)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
+            StringBuilder sb = new StringBuilder();
+            for (Part p : c.content().parts()) {
+                if (p == null || p.text() == null) continue;
+                sb.append(p.text());
+            }
+
+            String result = sb.toString().trim();
+            return result.isBlank() ? null : result;
         }
 
         public String safeDebug() {
