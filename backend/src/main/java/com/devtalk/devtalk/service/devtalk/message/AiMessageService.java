@@ -7,14 +7,17 @@ import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
 import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
 import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
 import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
+import com.devtalk.devtalk.service.devtalk.llm.LlmFinishReason;
 import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
 import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;
 import com.devtalk.devtalk.service.devtalk.llm.LlmPromptComposer;
 import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
 import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
+import com.devtalk.devtalk.service.devtalk.llm.LlmRole;
 import com.devtalk.devtalk.service.devtalk.llm.context.SessionSummaryService;
 import com.devtalk.devtalk.service.devtalk.llm.context.SessionSummaryStore;
 import com.devtalk.devtalk.service.devtalk.llm.context.TailSelector;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,6 +33,12 @@ public final class AiMessageService {
     private final SessionSummaryStore sessionSummaryStore;
     private final SessionSummaryService sessionSummaryService;
     private final LlmPromptComposer promptComposer;
+
+    private static final String CONTINUE_PROMPT =
+        "방금 답변이 길이 제한으로 끊겼습니다. 바로 이어서 계속 작성해 주세요. " +
+            "이미 작성한 문장은 반복하지 말고, 중간부터 자연스럽게 이어서 작성하세요.";
+
+    private static final int MAX_CONTINUE_ROUNDS = 2;
 
     public AiMessageService(MessageRepository messageRepository, LlmClient llmClient, TailSelector tailSelector, SessionSummaryService sessionSummaryService, SessionSummaryStore sessionSummaryStore, LlmPromptComposer promptComposer) {
         this.messageRepository = Objects.requireNonNull(messageRepository);
@@ -82,32 +91,67 @@ public final class AiMessageService {
                 """;
 
         String systemPrompt = baseSystemPrompt + "\n" + composed.systemPrompt();
-        List<LlmMessage> context = composed.messages();
+        List<LlmMessage> baseContext = composed.messages();
 
-        // 8) LLM 호출
-        LlmRequest request = new LlmRequest(systemPrompt, context, LlmOptions.defaults());
-        LlmResult result = llmClient.generate(request);
+        LlmOptions options = LlmOptions.defaults();
 
-        // 9) 결과 저장
-        MessageMarkers markers = null;
+        // 8) LLM 호출 (자동 이어쓰기 포함)
+        StringBuilder total = new StringBuilder();
+        LlmFinishReason lastReason = LlmFinishReason.UNKNOWN;
 
-        Message aiMessage = switch (result) {
-            case LlmResult.Success s -> new Message(
-                MessageRole.AI,
-                s.text(),
-                markers,
-                MessageStatus.SUCCESS
-            );
-            case LlmResult.Failure f -> new Message(
-                MessageRole.AI,
-                "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
-                    + "\n(code=" + f.code() + ")",
-                markers,
-                MessageStatus.FAILED
-            );
-        };
+        int maxRounds = 1 + MAX_CONTINUE_ROUNDS;
+        for (int round = 1; round <= maxRounds; round++) {
+
+            List<LlmMessage> ctx = (round == 1)
+                ? baseContext
+                : buildContinueContext(baseContext, total.toString());
+
+            LlmRequest request = new LlmRequest(systemPrompt, ctx, options);
+            LlmResult result = llmClient.generate(request);
+
+            if (result instanceof LlmResult.Failure f) {
+                Message failed = new Message(
+                    MessageRole.AI,
+                    "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
+                        + "\n(code=" + f.code() + ")",
+                    null,
+                    MessageStatus.FAILED
+                );
+                return MessageResponse.from(messageRepository.append(sessionId, failed));
+            }
+
+            LlmResult.Success s = (LlmResult.Success) result;
+            total.append(s.text());
+            lastReason = s.finishReason();
+
+            // ✅ 토큰 때문에 끊긴 경우에만 이어쓰기
+            if (lastReason != LlmFinishReason.MAX_TOKENS) {
+                break;
+            }
+        }
+
+        // 9) 최종 결과 저장 (유저 입장에서 1개의 자연스러운 답변)
+        Message aiMessage = new Message(
+            MessageRole.AI,
+            total.toString(),
+            (MessageMarkers) null,
+            MessageStatus.SUCCESS
+        );
 
         return MessageResponse.from(messageRepository.append(sessionId, aiMessage));
+    }
+
+    private List<LlmMessage> buildContinueContext(List<LlmMessage> baseContext, String assistantSoFar) {
+        List<LlmMessage> merged = new ArrayList<>(baseContext.size() + 2);
+        merged.addAll(baseContext);
+
+        // “지금까지 AI가 말한 내용”을 넣고,
+        merged.add(new LlmMessage(LlmRole.AI, assistantSoFar));
+
+        // “이어서 계속”을 user로 넣는다
+        merged.add(new LlmMessage(LlmRole.USER, CONTINUE_PROMPT));
+
+        return merged;
     }
 
     private Optional<Message> findLatestSuccessUser(List<Message> historyInOrder) {
