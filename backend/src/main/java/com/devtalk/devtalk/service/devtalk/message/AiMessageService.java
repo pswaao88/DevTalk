@@ -34,9 +34,21 @@ public final class AiMessageService {
     private final SessionSummaryService sessionSummaryService;
     private final LlmPromptComposer promptComposer;
 
-    private static final String CONTINUE_PROMPT =
-        "방금 답변이 길이 제한으로 끊겼습니다. 바로 이어서 계속 작성해 주세요. " +
-            "이미 작성한 문장은 반복하지 말고, 중간부터 자연스럽게 이어서 작성하세요.";
+    private static final String CONTINUE_PROMPT = """
+        출력 길이 제한으로 이전 답변이 중간에 끊겼습니다.
+        
+        아래 규칙을 반드시 지켜서 이어서 작성하세요.
+        
+        [규칙]
+        1. 이미 출력된 문장이나 표현을 **단 한 글자도 반복하지 마세요**.
+        2. 반드시 **직전 문장의 마지막 문자 바로 다음 내용부터** 이어서 작성하세요.
+        3. "..." , "…", "(계속)", "이어서", "다음과 같습니다" 등의 표현을 **절대 사용하지 마세요**.
+        4. 새 서론, 요약, 인사말을 추가하지 마세요.
+        5. 오직 이어서 작성만 하세요.
+        
+        위 규칙을 어기면 응답은 잘못된 것으로 간주됩니다.
+    """;
+
 
     private static final int MAX_CONTINUE_ROUNDS = 2;
 
