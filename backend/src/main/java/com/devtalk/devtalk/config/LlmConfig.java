@@ -1,13 +1,17 @@
 package com.devtalk.devtalk.config;
 
 import com.devtalk.devtalk.infra.llm.GeminiHttpClient;
+import com.devtalk.devtalk.infra.llm.GeminiStreamClient;
 import com.devtalk.devtalk.infra.llm.MockLlmClient;
 import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
+import com.devtalk.devtalk.service.devtalk.llm.LlmStreamClient;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 public class LlmConfig {
@@ -37,5 +41,14 @@ public class LlmConfig {
             return new GeminiHttpClient(geminiRestClient, apiKey, model);
         }
         return new MockLlmClient(mockAlwaysFail);
+    }
+    @Bean
+    public LlmStreamClient llmStreamClient(
+        WebClient geminiWebClient,
+        ObjectMapper objectMapper,
+        @Value("${LLM_GEMINI_API_KEY}") String apiKey,
+        @Value("${LLM_GEMINI_MODEL}") String model
+    ) {
+        return new GeminiStreamClient(geminiWebClient, objectMapper ,apiKey, model);
     }
 }
