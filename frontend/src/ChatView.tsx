@@ -1,5 +1,9 @@
 // src/ChatView.tsx
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 type MessageRole = 'USER' | 'AI' | 'SYSTEM';
 type MessageStatus = 'SUCCESS' | 'FAILED';
@@ -34,16 +38,78 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // 스트리밍 중인 AI 답변 (임시)
+  const [streamingAiContent, setStreamingAiContent] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isDone, setIsDone] = useState(false); // 스트리밍은 끝났지만 타이핑 중
+
+  // 타이핑 애니메이션용
+  const [typingQueue, setTypingQueue] = useState<string[]>([]);
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
     loadSession();
     loadMessages();
+
+    // 컴포넌트 언마운트 시 SSE 연결 정리
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+    };
   }, [sessionId]);
+
+  // 타이핑 애니메이션 처리
+  useEffect(() => {
+    if (typingQueue.length === 0) {
+      // 타이핑 큐가 비었고, 스트리밍이 완료되었으면 메시지 재조회
+      if (isDone) {
+        setIsStreaming(false);
+        setStreamingAiContent('');
+        setIsDone(false);
+        loadMessages();
+      }
+      return;
+    }
+
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+    }
+
+    typingIntervalRef.current = setInterval(() => {
+      setTypingQueue(queue => {
+        if (queue.length === 0) {
+          if (typingIntervalRef.current) {
+            clearInterval(typingIntervalRef.current);
+            typingIntervalRef.current = null;
+          }
+          return queue;
+        }
+
+        // 큐에서 첫 글자 꺼내서 화면에 추가
+        const [firstChar, ...rest] = queue;
+        setStreamingAiContent(prev => prev + firstChar);
+        return rest;
+      });
+    }, 30); // 30ms마다 한 글자씩 (속도 조절 가능: 20~50ms 권장)
+
+    return () => {
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
+    };
+  }, [typingQueue, isDone]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingAiContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,21 +146,91 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     setSending(true);
 
     try {
-      // 1. USER 메시지 전송
+      // ============================================
+      // 1️⃣ USER 메시지 저장
+      // ============================================
       const userResponse = await fetch(`${API_BASE}/sessions/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: userMessage, marker: null })
       });
+
+      if (!userResponse.ok) {
+        throw new Error('유저 메시지 저장 실패');
+      }
+
       const userMsg = await userResponse.json();
       setMessages(prev => [...prev, userMsg]);
 
-      // 2. AI 응답 자동 생성
-      const aiResponse = await fetch(`${API_BASE}/sessions/${sessionId}/ai/messages`, {
-        method: 'POST'
+      // ============================================
+      // 2️⃣ AI 스트리밍 시작
+      // ============================================
+      setIsStreaming(true);
+      setIsDone(false);
+      setStreamingAiContent('');
+      setTypingQueue([]);
+
+      // SSE 연결 생성
+      const streamUrl = `${API_BASE}/sessions/${sessionId}/ai/stream?replyToUserMessageId=${userMsg.messageId}`;
+      console.log('🔗 SSE 연결 시도:', streamUrl);
+
+      const eventSource = new EventSource(streamUrl);
+      eventSourceRef.current = eventSource;
+
+      // 📡 연결 성공
+      eventSource.onopen = () => {
+        console.log('✅ SSE 연결 성공');
+      };
+
+      // 📡 start 이벤트
+      eventSource.addEventListener('start', (e) => {
+        console.log('🚀 스트리밍 시작:', e.data);
+        setStreamingAiContent(''); // 초기화
       });
-      const aiMsg = await aiResponse.json();
-      setMessages(prev => [...prev, aiMsg]);
+
+      // 📡 delta 이벤트 (실시간 텍스트 조각)
+      eventSource.addEventListener('delta', (e) => {
+        const deltaText = e.data;
+        console.log('📝 Delta 수신:', deltaText);
+
+        // 받은 텍스트를 글자 단위로 큐에 추가
+        const chars = deltaText.split('');
+        setTypingQueue(prev => [...prev, ...chars]);
+      });
+
+      // 📡 done 이벤트 (완료)
+      eventSource.addEventListener('done', () => {
+        console.log('✅ 스트리밍 완료 - 타이핑 대기 중');
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        setIsDone(true); // 타이핑이 끝나면 자동으로 메시지 재조회됨
+      });
+
+      // 📡 일반 message 이벤트 (SSE 기본 이벤트)
+      eventSource.onmessage = (e) => {
+        console.log('💬 일반 message 이벤트:', e.data);
+      };
+
+      // 📡 error 이벤트
+      eventSource.onerror = (error) => {
+        console.error('❌ SSE 에러:', error);
+        console.log('SSE readyState:', eventSource.readyState);
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+
+        setIsStreaming(false);
+        setIsDone(false);
+        setStreamingAiContent('');
+        setTypingQueue([]);
+
+        alert('AI 응답 생성 중 오류가 발생했습니다.');
+      };
 
     } catch (error) {
       console.error('메시지 전송 실패:', error);
@@ -105,7 +241,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   };
 
   const toggleResolve = async () => {
-    if (!session) return;
+    if (!session || isStreaming) return; // 스트리밍 중에는 상태 변경 막기
 
     const isResolved = session.status === 'RESOLVED';
     const endpoint = isResolved ? 'unresolved' : 'resolve';
@@ -153,11 +289,19 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
             {/* 상태 토글 버튼 그룹 */}
             <div className="status-toggle-container">
               <span className="status-label">상태</span>
-              <div className={`toggle-switch ${session.status === 'RESOLVED' ? 'resolved' : 'active'}`}>
-                <button className="toggle-option" onClick={toggleResolve}>
+              <div className={`toggle-switch ${session.status === 'RESOLVED' ? 'resolved' : 'active'} ${isStreaming ? 'disabled' : ''}`}>
+                <button
+                    className="toggle-option"
+                    onClick={toggleResolve}
+                    disabled={isStreaming}
+                >
                   ○ 진행중
                 </button>
-                <button className="toggle-option" onClick={toggleResolve}>
+                <button
+                    className="toggle-option"
+                    onClick={toggleResolve}
+                    disabled={isStreaming}
+                >
                   ✓ 해결됨
                 </button>
               </div>
@@ -170,6 +314,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                 <div style={{ textAlign: 'center', color: '#999' }}>메시지 로딩 중...</div>
             ) : (
                 <>
+                  {/* 확정된 메시지들 */}
                   {messages.map(msg => {
                     if (msg.role === 'SYSTEM') {
                       return (
@@ -193,13 +338,36 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                       return (
                           <div key={msg.messageId} className="message-row ai-row">
                             <div className="ai-avatar">🤖</div>
-                            <div className={`message-bubble ai-bubble ${msg.status === 'FAILED' ? 'failed' : ''}`}>
+                            <div className={`message-bubble ai-bubble markdown-content ${msg.status === 'FAILED' ? 'failed' : ''}`}>
                               {msg.status === 'FAILED' && (
                                   <div style={{ color: '#c00', marginBottom: '8px', fontWeight: '600' }}>
                                     ⚠️ AI 응답 실패
                                   </div>
                               )}
-                              {msg.content}
+                              <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    code({ node, inline, className, children, ...props }) {
+                                      const match = /language-(\w+)/.exec(className || '');
+                                      return !inline && match ? (
+                                          <SyntaxHighlighter
+                                              style={vscDarkPlus}
+                                              language={match[1]}
+                                              PreTag="div"
+                                              {...props}
+                                          >
+                                            {String(children).replace(/\n$/, '')}
+                                          </SyntaxHighlighter>
+                                      ) : (
+                                          <code className={className} {...props}>
+                                            {children}
+                                          </code>
+                                      );
+                                    },
+                                  }}
+                              >
+                                {msg.content}
+                              </ReactMarkdown>
                             </div>
                           </div>
                       );
@@ -207,13 +375,44 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
                     return null;
                   })}
-                  {sending && (
-                      <div className="ai-row">
-                        <div style={{ color: '#999', fontSize: '14px' }}>
-                          AI가 응답을 생성하고 있습니다...
+
+                  {/* 스트리밍 중인 AI 답변 (임시) */}
+                  {isStreaming && (
+                      <div className="message-row ai-row">
+                        <div className="ai-avatar">🤖</div>
+                        <div className="message-bubble ai-bubble markdown-content streaming" style={{
+                          border: '2px dashed #4a90e2',
+                          opacity: 0.9
+                        }}>
+                          <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                code({ node, inline, className, children, ...props }) {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  return !inline && match ? (
+                                      <SyntaxHighlighter
+                                          style={vscDarkPlus}
+                                          language={match[1]}
+                                          PreTag="div"
+                                          {...props}
+                                      >
+                                        {String(children).replace(/\n$/, '')}
+                                      </SyntaxHighlighter>
+                                  ) : (
+                                      <code className={className} {...props}>
+                                        {children}
+                                      </code>
+                                  );
+                                },
+                              }}
+                          >
+                            {streamingAiContent || '생각 중...'}
+                          </ReactMarkdown>
+                          <span className="typing-cursor" />
                         </div>
                       </div>
                   )}
+
                   <div ref={messagesEndRef} />
                 </>
             )}
@@ -226,15 +425,15 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="생각을 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
-              disabled={sending}
+              disabled={sending || isStreaming}
               className="message-input"
           />
             <button
                 onClick={sendMessage}
-                disabled={!input.trim() || sending}
+                disabled={!input.trim() || sending || isStreaming}
                 className="send-button"
             >
-              전송 →
+              {isStreaming ? '생성 중' : '전송'}
             </button>
           </div>
         </div>
