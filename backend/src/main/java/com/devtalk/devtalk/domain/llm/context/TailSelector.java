@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.llm.context;
+package com.devtalk.devtalk.domain.llm.context;
 
 import com.devtalk.devtalk.domain.message.Message;
 import java.util.List;

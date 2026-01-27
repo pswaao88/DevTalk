@@ -1,7 +1,7 @@
 package com.devtalk.devtalk.api.controller.devtalk.llm;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.service.message.AiMessageService;
+import com.devtalk.devtalk.service.llm.AiMessageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

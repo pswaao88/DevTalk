@@ -1,9 +1,9 @@
 package com.devtalk.devtalk.infra.llm;
 
-import com.devtalk.devtalk.service.llm.LlmFinishReason;
-import com.devtalk.devtalk.service.llm.LlmRequest;
-import com.devtalk.devtalk.service.llm.LlmStreamClient;
-import com.devtalk.devtalk.service.llm.LlmStreamEvent;
+import com.devtalk.devtalk.domain.llm.LlmFinishReason;
+import com.devtalk.devtalk.domain.llm.LlmRequest;
+import com.devtalk.devtalk.domain.llm.LlmStreamClient;
+import com.devtalk.devtalk.domain.llm.LlmStreamEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

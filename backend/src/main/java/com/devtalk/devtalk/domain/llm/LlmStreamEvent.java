@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.llm;
+package com.devtalk.devtalk.domain.llm;
 
 public record LlmStreamEvent(String delta, LlmFinishReason finishReason) {
     public static LlmStreamEvent delta(String d) { return new LlmStreamEvent(d, LlmFinishReason.UNKNOWN); }

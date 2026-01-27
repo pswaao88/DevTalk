@@ -1,5 +1,7 @@
-package com.devtalk.devtalk.service.llm;
+package com.devtalk.devtalk.service.llm.context;
 
+import com.devtalk.devtalk.domain.llm.LlmMessage;
+import com.devtalk.devtalk.domain.llm.LlmRole;
 import com.devtalk.devtalk.domain.message.Message;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.llm;
+package com.devtalk.devtalk.domain.llm;
 
 import reactor.core.publisher.Flux;
 

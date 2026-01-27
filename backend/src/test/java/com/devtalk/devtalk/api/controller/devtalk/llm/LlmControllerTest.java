@@ -3,7 +3,7 @@ package com.devtalk.devtalk.api.controller.devtalk.llm;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
-import com.devtalk.devtalk.service.message.AiMessageService;
+import com.devtalk.devtalk.service.llm.AiMessageService;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

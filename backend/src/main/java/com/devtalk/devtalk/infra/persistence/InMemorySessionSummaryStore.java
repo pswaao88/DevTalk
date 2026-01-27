@@ -1,7 +1,7 @@
 package com.devtalk.devtalk.infra.persistence;
 
-import com.devtalk.devtalk.service.llm.context.SessionSummaryStore;
-import com.devtalk.devtalk.service.llm.context.SummaryState;
+import com.devtalk.devtalk.domain.llm.context.SessionSummaryStore;
+import com.devtalk.devtalk.domain.llm.context.SummaryState;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
