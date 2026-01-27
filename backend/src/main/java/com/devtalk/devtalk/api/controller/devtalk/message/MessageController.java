@@ -2,8 +2,7 @@ package com.devtalk.devtalk.api.controller.devtalk.message;
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.service.devtalk.message.MessageService;
+import com.devtalk.devtalk.service.message.MessageService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

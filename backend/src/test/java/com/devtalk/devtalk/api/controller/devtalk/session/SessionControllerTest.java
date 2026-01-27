@@ -13,12 +13,12 @@ import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
-import com.devtalk.devtalk.domain.devtalk.session.SessionStatus;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
+import com.devtalk.devtalk.domain.session.SessionStatus;
 
 
-import com.devtalk.devtalk.service.devtalk.session.SessionService;
+import com.devtalk.devtalk.service.session.SessionService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;

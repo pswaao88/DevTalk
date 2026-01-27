@@ -1,11 +1,13 @@
 package com.devtalk.devtalk.infra.llm;
 
-import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
-import com.devtalk.devtalk.service.devtalk.llm.LlmFailureCode;
-import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
-import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
-import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
+import com.devtalk.devtalk.domain.llm.LlmClient;
+import com.devtalk.devtalk.domain.llm.LlmFailureCode;
+import com.devtalk.devtalk.domain.llm.LlmFinishReason;
+import com.devtalk.devtalk.domain.llm.LlmMessage;
+import com.devtalk.devtalk.domain.llm.LlmOptions;
+import com.devtalk.devtalk.domain.llm.LlmRequest;
+import com.devtalk.devtalk.domain.llm.LlmResult;
+import com.devtalk.devtalk.domain.llm.LlmRole;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +56,8 @@ public class GeminiHttpClient implements LlmClient {
             }
             // 응답에서 Text를 추출해 성공과 실패로 반환
             String text = response.extractFirstText();
+            LlmFinishReason finishReason = mapFinishReason(response.firstFinishReasonRaw());
+
             if (text == null || text.isBlank()) {
                 return LlmResult.Failure.of(
                     LlmFailureCode.PROVIDER_ERROR,
@@ -62,7 +66,7 @@ public class GeminiHttpClient implements LlmClient {
                 );
             }
 
-            return new LlmResult.Success(text);
+            return LlmResult.Success.of(text, finishReason);
 
         } catch (ResourceAccessException e) {
             // 타임아웃/연결 실패 계열 처리
@@ -128,10 +132,11 @@ public class GeminiHttpClient implements LlmClient {
 
             List<Content> contents = new ArrayList<>();
             for (LlmMessage m : request.messages()) {
+                if (m.role() == LlmRole.SYSTEM) continue;
                 String role = switch (m.role()) {
                     case USER -> "user";
                     case AI -> "model";
-                    case SYSTEM -> "user";
+                    default -> "user";
                 };
                 contents.add(new Content(role, List.of(new Part(m.content()))));
             }
@@ -151,7 +156,7 @@ public class GeminiHttpClient implements LlmClient {
      * candidates[0].content.parts[0].text 를 주로 사용
      */
     public record GeminiGenerateResponse(List<Candidate> candidates) {
-        public record Candidate(Content content) {}
+        public record Candidate(Content content, String finishReason) {}
         public record Content(List<Part> parts) {}
         public record Part(String text) {}
 
@@ -168,6 +173,12 @@ public class GeminiHttpClient implements LlmClient {
 
             String result = sb.toString().trim();
             return result.isBlank() ? null : result;
+        }
+
+        public String firstFinishReasonRaw() {
+            if (candidates == null || candidates.isEmpty()) return null;
+            Candidate c = candidates.get(0);
+            return (c == null) ? null : c.finishReason();
         }
 
         public String safeDebug() {
@@ -195,4 +206,15 @@ public class GeminiHttpClient implements LlmClient {
             .requestFactory(f)
             .build();
     }
+    private static LlmFinishReason mapFinishReason(String raw) {
+        if (raw == null || raw.isBlank()) return LlmFinishReason.UNKNOWN;
+
+        return switch (raw) {
+            case "STOP" -> LlmFinishReason.STOP;
+            case "MAX_TOKENS" -> LlmFinishReason.MAX_TOKENS;
+            case "SAFETY" -> LlmFinishReason.SAFETY;
+            default -> LlmFinishReason.OTHER;
+        };
+    }
+
 }

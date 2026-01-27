@@ -1,12 +1,10 @@
 package com.devtalk.devtalk.api.controller.devtalk.llm;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.MessageMarkers;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
-import com.devtalk.devtalk.service.devtalk.message.AiMessageService;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
+import com.devtalk.devtalk.service.llm.AiMessageService;
 import java.time.LocalDateTime;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
