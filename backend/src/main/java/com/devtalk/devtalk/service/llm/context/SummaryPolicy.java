@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.llm.context;
+package com.devtalk.devtalk.service.llm.context;
 
 public record SummaryPolicy(
     int promptMaxChars,   // 프롬프트 요청시 요약본 제한 길이 1000

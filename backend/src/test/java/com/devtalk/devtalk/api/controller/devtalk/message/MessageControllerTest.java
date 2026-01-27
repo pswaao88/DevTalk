@@ -13,7 +13,7 @@ import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
-import com.devtalk.devtalk.service.devtalk.message.MessageService;
+import com.devtalk.devtalk.service.message.MessageService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;

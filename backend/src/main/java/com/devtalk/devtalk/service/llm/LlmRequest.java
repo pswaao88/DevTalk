@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.llm;
+package com.devtalk.devtalk.service.llm;
 
 import java.util.List;
 import java.util.Objects;

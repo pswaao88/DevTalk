@@ -1,15 +1,15 @@
-package com.devtalk.devtalk.service.devtalk.llm.context;
+package com.devtalk.devtalk.service.llm.context;
 
 import com.devtalk.devtalk.domain.message.Message;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
-import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
-import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
-import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
-import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRole;
+import com.devtalk.devtalk.service.llm.LlmClient;
+import com.devtalk.devtalk.service.llm.LlmMessage;
+import com.devtalk.devtalk.service.llm.LlmOptions;
+import com.devtalk.devtalk.service.llm.LlmRequest;
+import com.devtalk.devtalk.service.llm.LlmResult;
+import com.devtalk.devtalk.service.llm.LlmRole;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

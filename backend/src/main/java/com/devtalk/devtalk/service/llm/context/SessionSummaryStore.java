@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.llm.context;
+package com.devtalk.devtalk.service.llm.context;
 
 public interface SessionSummaryStore {
     /**

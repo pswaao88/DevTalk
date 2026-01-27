@@ -1,10 +1,10 @@
 package com.devtalk.devtalk.infra.llm;
 
-import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
-import com.devtalk.devtalk.service.devtalk.llm.LlmFailureCode;
-import com.devtalk.devtalk.service.devtalk.llm.LlmFinishReason;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
-import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
+import com.devtalk.devtalk.service.llm.LlmClient;
+import com.devtalk.devtalk.service.llm.LlmFailureCode;
+import com.devtalk.devtalk.service.llm.LlmFinishReason;
+import com.devtalk.devtalk.service.llm.LlmRequest;
+import com.devtalk.devtalk.service.llm.LlmResult;
 import java.time.Instant;
 
 public final class MockLlmClient implements LlmClient {

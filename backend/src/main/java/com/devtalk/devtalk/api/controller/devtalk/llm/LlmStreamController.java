@@ -1,6 +1,6 @@
 package com.devtalk.devtalk.api.controller.devtalk.llm;
 
-import com.devtalk.devtalk.service.devtalk.message.AiStreamService;
+import com.devtalk.devtalk.service.message.AiStreamService;
 import java.time.Duration;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;

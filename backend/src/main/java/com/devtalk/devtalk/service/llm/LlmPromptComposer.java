@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.llm;
+package com.devtalk.devtalk.service.llm;
 
 import com.devtalk.devtalk.domain.message.Message;
 import com.devtalk.devtalk.domain.message.MessageRole;

@@ -1,7 +1,7 @@
-package com.devtalk.devtalk.service.devtalk.message;
+package com.devtalk.devtalk.service.message;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.message.Message;
@@ -14,8 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-@ActiveProfiles("fail")
-class AiMessageServiceMockFailTest {
+@ActiveProfiles("test")
+class AiMessageServiceMockSuccessTest {
 
     @Autowired
     private AiMessageService aiMessageService;
@@ -23,17 +23,17 @@ class AiMessageServiceMockFailTest {
     private MessageRepository messageRepository;
 
     @Test
-    void mock_failure_creates_failed_ai_message() {
-        String sessionId = "session-fail";
+    void mock_success_creates_ai_message() {
+        String sessionId = "session-success";
 
         messageRepository.append(sessionId,
-            new Message(MessageRole.USER, "실패 테스트", null, MessageStatus.SUCCESS)
+            new Message(MessageRole.USER, "테스트", null, MessageStatus.SUCCESS)
         );
 
         MessageResponse ai = aiMessageService.generateAndSave(sessionId);
 
         assertEquals(MessageRole.AI, ai.role());
-        assertEquals(MessageStatus.FAILED, ai.status());
-        assertTrue(ai.content().contains("실패"));
+        assertEquals(MessageStatus.SUCCESS, ai.status());
+        assertFalse(ai.content().isBlank());
     }
 }

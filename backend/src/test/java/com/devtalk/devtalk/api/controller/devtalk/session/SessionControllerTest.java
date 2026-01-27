@@ -18,7 +18,7 @@ import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.domain.session.SessionStatus;
 
 
-import com.devtalk.devtalk.service.devtalk.session.SessionService;
+import com.devtalk.devtalk.service.session.SessionService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;

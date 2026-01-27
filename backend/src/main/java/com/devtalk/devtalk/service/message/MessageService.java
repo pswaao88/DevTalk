@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.message;
+package com.devtalk.devtalk.service.message;
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;

@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.llm;
+package com.devtalk.devtalk.service.llm;
 
 public sealed interface LlmResult permits LlmResult.Success, LlmResult.Failure {
     // 성공 및 실패 중첩 클래스로 인터페이스 내부에 선언되어 static, record는 final

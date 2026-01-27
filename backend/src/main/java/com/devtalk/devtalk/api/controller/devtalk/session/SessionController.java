@@ -4,7 +4,7 @@ import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
-import com.devtalk.devtalk.service.devtalk.session.SessionService;
+import com.devtalk.devtalk.service.session.SessionService;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;

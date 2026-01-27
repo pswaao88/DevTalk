@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.service.devtalk.session;
+package com.devtalk.devtalk.service.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;

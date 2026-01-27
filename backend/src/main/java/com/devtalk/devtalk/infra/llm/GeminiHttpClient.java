@@ -1,13 +1,13 @@
 package com.devtalk.devtalk.infra.llm;
 
-import com.devtalk.devtalk.service.devtalk.llm.LlmClient;
-import com.devtalk.devtalk.service.devtalk.llm.LlmFailureCode;
-import com.devtalk.devtalk.service.devtalk.llm.LlmFinishReason;
-import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
-import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRequest;
-import com.devtalk.devtalk.service.devtalk.llm.LlmResult;
-import com.devtalk.devtalk.service.devtalk.llm.LlmRole;
+import com.devtalk.devtalk.service.llm.LlmClient;
+import com.devtalk.devtalk.service.llm.LlmFailureCode;
+import com.devtalk.devtalk.service.llm.LlmFinishReason;
+import com.devtalk.devtalk.service.llm.LlmMessage;
+import com.devtalk.devtalk.service.llm.LlmOptions;
+import com.devtalk.devtalk.service.llm.LlmRequest;
+import com.devtalk.devtalk.service.llm.LlmResult;
+import com.devtalk.devtalk.service.llm.LlmRole;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
