@@ -1,12 +1,9 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
-import com.devtalk.devtalk.api.dto.response.ResolveResponse;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.session.Session;
 import com.devtalk.devtalk.service.devtalk.session.SessionService;
 import java.util.List;
 

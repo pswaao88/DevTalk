@@ -4,15 +4,13 @@ import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
-import com.devtalk.devtalk.domain.devtalk.session.Session;
-import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
-import java.time.LocalDateTime;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageRepository;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
+import com.devtalk.devtalk.domain.session.Session;
+import com.devtalk.devtalk.domain.session.SessionRepository;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service

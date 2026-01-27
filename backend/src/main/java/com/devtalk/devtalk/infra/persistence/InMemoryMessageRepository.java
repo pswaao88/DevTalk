@@ -1,7 +1,7 @@
 package com.devtalk.devtalk.infra.persistence;
 
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;

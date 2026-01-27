@@ -1,7 +1,7 @@
 package com.devtalk.devtalk.infra.persistence;
 
-import com.devtalk.devtalk.domain.devtalk.session.Session;
-import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import com.devtalk.devtalk.domain.session.Session;
+import com.devtalk.devtalk.domain.session.SessionRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

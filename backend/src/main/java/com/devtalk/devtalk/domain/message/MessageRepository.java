@@ -1,7 +1,6 @@
-package com.devtalk.devtalk.domain.devtalk.message;
+package com.devtalk.devtalk.domain.message;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface MessageRepository {
     Message append(String sessionId, Message message);

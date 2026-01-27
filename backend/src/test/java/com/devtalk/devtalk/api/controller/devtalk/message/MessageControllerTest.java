@@ -11,8 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.service.devtalk.message.MessageService;
 import java.time.LocalDateTime;
 import java.util.List;

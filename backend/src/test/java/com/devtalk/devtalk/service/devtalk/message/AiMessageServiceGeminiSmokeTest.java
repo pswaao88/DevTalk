@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageRepository;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

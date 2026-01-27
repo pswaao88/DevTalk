@@ -1,6 +1,6 @@
 package com.devtalk.devtalk.service.devtalk.llm.context;
 
-import com.devtalk.devtalk.domain.devtalk.message.Message;
+import com.devtalk.devtalk.domain.message.Message;
 import java.util.List;
 
 public interface TailSelector {

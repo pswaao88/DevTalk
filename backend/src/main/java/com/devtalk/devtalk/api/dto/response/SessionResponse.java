@@ -1,7 +1,7 @@
 package com.devtalk.devtalk.api.dto.response;
 
-import com.devtalk.devtalk.domain.devtalk.session.Session;
-import com.devtalk.devtalk.domain.devtalk.session.SessionStatus;
+import com.devtalk.devtalk.domain.session.Session;
+import com.devtalk.devtalk.domain.session.SessionStatus;
 import java.time.LocalDateTime;
 
 public record SessionResponse(

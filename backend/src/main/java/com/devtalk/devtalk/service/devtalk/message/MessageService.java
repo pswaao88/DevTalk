@@ -2,10 +2,10 @@ package com.devtalk.devtalk.service.devtalk.message;
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
-import com.devtalk.devtalk.domain.devtalk.session.Session;
-import com.devtalk.devtalk.domain.devtalk.session.SessionRepository;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageRepository;
+import com.devtalk.devtalk.domain.session.Session;
+import com.devtalk.devtalk.domain.session.SessionRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

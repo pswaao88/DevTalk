@@ -1,10 +1,10 @@
 package com.devtalk.devtalk.service.devtalk.message;
 
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageMarkers;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRepository;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageMarkers;
+import com.devtalk.devtalk.domain.message.MessageRepository;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.service.devtalk.llm.LlmFinishReason;
 import com.devtalk.devtalk.service.devtalk.llm.LlmMessage;
 import com.devtalk.devtalk.service.devtalk.llm.LlmOptions;

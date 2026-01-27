@@ -1,8 +1,8 @@
 package com.devtalk.devtalk.service.devtalk.llm.context;
 
-import com.devtalk.devtalk.domain.devtalk.message.Message;
-import com.devtalk.devtalk.domain.devtalk.message.MessageRole;
-import com.devtalk.devtalk.domain.devtalk.message.MessageStatus;
+import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageRole;
+import com.devtalk.devtalk.domain.message.MessageStatus;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;

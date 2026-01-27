@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.domain.devtalk.session;
+package com.devtalk.devtalk.domain.session;
 
 import java.util.List;
 import java.util.Optional;

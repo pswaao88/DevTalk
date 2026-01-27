@@ -1,4 +1,4 @@
-package com.devtalk.devtalk.domain.devtalk.session;
+package com.devtalk.devtalk.domain.session;
 
 public enum SessionStatus {
     ACTIVE,

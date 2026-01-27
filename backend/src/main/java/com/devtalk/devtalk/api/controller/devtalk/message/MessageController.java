@@ -2,7 +2,6 @@ package com.devtalk.devtalk.api.controller.devtalk.message;
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
-import com.devtalk.devtalk.domain.devtalk.message.Message;
 import com.devtalk.devtalk.service.devtalk.message.MessageService;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
