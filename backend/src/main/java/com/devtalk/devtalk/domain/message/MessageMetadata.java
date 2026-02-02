@@ -3,8 +3,8 @@ package com.devtalk.devtalk.domain.message;
 import com.devtalk.devtalk.domain.llm.LlmFinishReason;
 
 public record MessageMetadata(
-    int promptTokenCount,      // 질문(입력) 토큰 수
-    int candidatesTokenCount,  // 답변(출력) 토큰 수
+    int inputTokenCount,      // 질문(입력) 토큰 수
+    int outputTokenCount,  // 답변(출력) 토큰 수
     long latencyMs,            // 응답 걸린 시간 (ms)
     LlmFinishReason finishReason // 종료 원인 (STOP, MAX_TOKENS 등)
 ) {
