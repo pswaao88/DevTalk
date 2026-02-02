@@ -9,14 +9,16 @@ public class Message {
     private final String content;
     private MessageMarkers markers;
     private final MessageStatus status;
+    private final MessageMetadata messageMetadata;
     private final LocalDateTime createdAt;
 
-    public Message(MessageRole role, String content, MessageMarkers markers ,MessageStatus status) {
+    public Message(MessageRole role, String content, MessageMarkers markers , MessageStatus status, MessageMetadata messageMetadata) {
         this.messageId = UUID.randomUUID().toString();
         this.role = role;
         this.content = content;
         this.markers = markers;
         this.status = status;
+        this.messageMetadata = messageMetadata;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -37,6 +39,8 @@ public class Message {
     public MessageStatus getStatus() {
         return status;
     }
+
+    public MessageMetadata getMessageMetadata(){return messageMetadata;}
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
