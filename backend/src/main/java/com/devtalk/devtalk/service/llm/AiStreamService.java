@@ -1,7 +1,9 @@
 package com.devtalk.devtalk.service.llm;
 
+import com.devtalk.devtalk.domain.llm.LlmTokenUsage;
 import com.devtalk.devtalk.domain.message.Message;
 import com.devtalk.devtalk.domain.message.MessageMarkers;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
@@ -66,7 +68,6 @@ public class AiStreamService {
 
     private void doStream(String sessionId, String replyToUserMessageId, SseEmitter emitter) {
         AtomicBoolean clientGone = new AtomicBoolean(false);
-
         try {
             // 1) 히스토리
             List<Message> history = messageRepository.findAllBySessionId(sessionId);
@@ -102,6 +103,9 @@ public class AiStreamService {
             LlmFinishReason finalReason = LlmFinishReason.UNKNOWN;
             int continueCount = 0;
 
+            int totalInputToken = 0;
+            int totalOutputToken = 0;
+            long totalLatency = 0;
             while (true) {
                 LlmRequest req;
 
@@ -122,7 +126,11 @@ public class AiStreamService {
                     req = new LlmRequest(contSystem, cont.messages(), options);
                 }
 
-                LlmFinishReason r = streamOnce(req, emitter, clientGone, total);
+                MessageMetadata metadata = streamOnce(req, emitter, clientGone, total);
+                totalInputToken += metadata.inputTokenCount();
+                totalOutputToken += metadata.outputTokenCount();
+                totalLatency += metadata.latencyMs();
+                LlmFinishReason r = metadata.finishReason();
                 finalReason = r;
 
                 if (clientGone.get()) break;
@@ -133,13 +141,13 @@ public class AiStreamService {
                 }
                 break;
             }
-
             // 7) 완료 시 AI 메시지 1건 저장
             Message ai = new Message(
                 MessageRole.AI,
                 total.toString(),
                 (MessageMarkers) null,
-                MessageStatus.SUCCESS
+                MessageStatus.SUCCESS,
+                new MessageMetadata(totalInputToken, totalOutputToken, totalLatency, finalReason)
             );
             Message saved = messageRepository.append(sessionId, ai);
 
@@ -160,16 +168,17 @@ public class AiStreamService {
     }
 
     // 1회 스트림을 끝까지 돌리고 finishReason 리턴
-    private LlmFinishReason streamOnce(
+    private MessageMetadata streamOnce(
         LlmRequest req,
         SseEmitter emitter,
         AtomicBoolean clientGone,
         StringBuilder total
     ) {
         final LlmFinishReason[] reason = new LlmFinishReason[]{LlmFinishReason.UNKNOWN};
+        final LlmTokenUsage[] tokenUsage = new LlmTokenUsage[1];
         final CountDownLatch latch = new CountDownLatch(1);
         final Throwable[] errHolder = new Throwable[]{null};
-
+        long startTime = System.currentTimeMillis();
         Disposable sub = llmStreamClient.stream(req).subscribe(
             evt -> {
                 if (evt.delta() != null && !evt.delta().isEmpty()) {
@@ -182,6 +191,7 @@ public class AiStreamService {
                 }
                 if (evt.finishReason() != null && evt.finishReason() != LlmFinishReason.UNKNOWN) {
                     reason[0] = evt.finishReason();
+                    tokenUsage[0] = evt.tokenUsage();
                 }
             },
             err -> {
@@ -210,8 +220,9 @@ public class AiStreamService {
             }
             throw new RuntimeException(errHolder[0]);
         }
-
-        return reason[0];
+        long endTime = System.currentTimeMillis();
+        LlmTokenUsage usage = (tokenUsage[0] != null) ? tokenUsage[0] : LlmTokenUsage.empty();
+        return new MessageMetadata(usage.inputTokenCount(), usage.outputTokenCount(), endTime - startTime, reason[0]);
     }
 
     private static void sendEvent(SseEmitter emitter, String name, String data) throws IOException {
