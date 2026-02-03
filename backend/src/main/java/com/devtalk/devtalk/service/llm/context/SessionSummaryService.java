@@ -4,6 +4,7 @@ import com.devtalk.devtalk.domain.llm.context.SessionSummaryStore;
 import com.devtalk.devtalk.domain.llm.context.SummaryPolicy;
 import com.devtalk.devtalk.domain.llm.context.SummaryState;
 import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
@@ -154,7 +155,8 @@ public class SessionSummaryService {
             MessageRole.SYSTEM,
             content,
             null,
-            MessageStatus.FAILED
+            MessageStatus.FAILED,
+            MessageMetadata.empty()
         ));
     }
 
