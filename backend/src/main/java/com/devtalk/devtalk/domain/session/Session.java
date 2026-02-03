@@ -22,6 +22,17 @@ public class Session {
         this.createdAt = LocalDateTime.now();
         this.lastUpdatedAt = LocalDateTime.now();
     }
+    // DB 매핑용 생성자
+    public Session(String sessionId, String title, SessionStatus status, String description, String aiSummary, LocalDateTime createdAt, LocalDateTime lastUpdatedAt) {
+        this.sessionId = sessionId;
+        this.title = title;
+        this.status = status;
+        this.description = description;
+        this.aiSummary = aiSummary;
+        this.createdAt = createdAt;
+        this.lastUpdatedAt = lastUpdatedAt;
+    }
+
     // 해결시에 status 변경
     public void resolve(){
         this.status = SessionStatus.RESOLVED;
