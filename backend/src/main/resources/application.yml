@@ -1,6 +1,18 @@
 spring:
   application:
     name: devtalk
+  datasource:
+    # 환경변수가 없으면 기본값(로컬 설정) 사용
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/devtalk?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${MYSQL_USERNAME:devtalk_user}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # 서버 시작 시 schema.sql 자동 실행 (개발 단계: always)
+    sql:
+      init:
+        mode: always
+        encoding: UTF-8
 
 llm:
   mode: gemini
