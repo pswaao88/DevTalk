@@ -27,10 +27,10 @@ public class AiContextConfig {
         return SummaryPolicy.defaults();
     }
 
-    @Bean
-    public SessionSummaryStore sessionSummaryStore() {
-        return new InMemorySessionSummaryStore();
-    }
+//    @Bean
+//    public SessionSummaryStore sessionSummaryStore() {
+//        return new InMemorySessionSummaryStore();
+//    }
 
     @Bean
     public LlmPromptComposer llmPromptComposer() {

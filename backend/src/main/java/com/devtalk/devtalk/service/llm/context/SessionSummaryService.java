@@ -151,7 +151,8 @@ public class SessionSummaryService {
     }
 
     private void appendSystemFailed(String sessionId, String content) {
-        messageRepository.append(sessionId, new Message(
+        messageRepository.save(new Message(
+            sessionId,
             MessageRole.SYSTEM,
             content,
             null,
