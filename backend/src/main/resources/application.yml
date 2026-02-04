@@ -9,10 +9,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
     # 서버 시작 시 schema.sql 자동 실행 (개발 단계: always)
-    sql:
-      init:
-        mode: always
-        encoding: UTF-8
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
 
 llm:
   mode: gemini
