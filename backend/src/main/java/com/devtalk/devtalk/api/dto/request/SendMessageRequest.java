@@ -10,7 +10,14 @@ public record SendMessageRequest(
     String content,
     MessageMarkers marker
 ) {
-    public static Message toDomain(SendMessageRequest sendMessageRequest){
-        return new Message(MessageRole.USER, sendMessageRequest.content(), sendMessageRequest.marker(), MessageStatus.SUCCESS, MessageMetadata.empty());
+    public Message toDomain(String sessionId) {
+        return new Message(
+            sessionId,       // 1. 여기서 받은 ID를 넣어줌
+            MessageRole.USER,
+            this.content(),  // 2. this.content()로 접근
+            this.marker(),
+            MessageStatus.SUCCESS,
+            MessageMetadata.empty()
+        );
     }
 }
