@@ -55,9 +55,9 @@ public class SessionService {
     public ResolveWithMessageResponse resolve(String sessionId){
         Session session = getSession(sessionId);
         session.resolve();
-        Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.SUCCESS,  MessageMetadata.empty());
+        Message systemMessage = new Message(sessionId, MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.SUCCESS,  MessageMetadata.empty());
         session.updateLastUpdatedAt();
-        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+        Message savedMessage = messageRepository.save(systemMessage);
 
         return ResolveWithMessageResponse.from(session, savedMessage);
     }
@@ -65,10 +65,10 @@ public class SessionService {
     public ResolveWithMessageResponse unresolve(String sessionId){
         Session session = getSession(sessionId);
         session.unresolved();
-        Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.SUCCESS, MessageMetadata.empty());
+        Message systemMessage = new Message(sessionId, MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.SUCCESS, MessageMetadata.empty());
         session.updateLastUpdatedAt();
 
-        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+        Message savedMessage = messageRepository.save(systemMessage);
         return ResolveWithMessageResponse.from(session, savedMessage);
     }
 }
