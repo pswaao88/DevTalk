@@ -143,13 +143,14 @@ public class AiStreamService {
             }
             // 7) 완료 시 AI 메시지 1건 저장
             Message ai = new Message(
+                sessionId,
                 MessageRole.AI,
                 total.toString(),
                 (MessageMarkers) null,
                 MessageStatus.SUCCESS,
                 new MessageMetadata(totalInputToken, totalOutputToken, totalLatency, finalReason)
             );
-            Message saved = messageRepository.append(sessionId, ai);
+            Message saved = messageRepository.save(ai);
 
             if (!clientGone.get()) {
                 try {

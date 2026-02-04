@@ -72,13 +72,14 @@ public final class AiMessageService {
         Optional<Message> latestUserOpt = findLatestSuccessUser(history);
         if (latestUserOpt.isEmpty()) {
             Message failed = new Message(
+                sessionId,
                 MessageRole.AI,
                 "AI 응답 생성에 실패했습니다. 최신 USER 메시지를 찾을 수 없습니다.",
                 null,
                 MessageStatus.FAILED,
                 MessageMetadata.empty()
             );
-            return MessageResponse.from(messageRepository.append(sessionId, failed));
+            return MessageResponse.from(messageRepository.save(failed));
         }
         Message latestUser = latestUserOpt.get();
 
@@ -127,6 +128,7 @@ public final class AiMessageService {
 
             if (result instanceof LlmResult.Failure f) {
                 Message failed = new Message(
+                    sessionId,
                     MessageRole.AI,
                     "AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요."
                         + "\n(code=" + f.code() + ")",
@@ -134,7 +136,7 @@ public final class AiMessageService {
                     MessageStatus.FAILED,
                     MessageMetadata.empty()
                 );
-                return MessageResponse.from(messageRepository.append(sessionId, failed));
+                return MessageResponse.from(messageRepository.save(failed));
             }
 
             LlmResult.Success s = (LlmResult.Success) result;
@@ -152,6 +154,7 @@ public final class AiMessageService {
 
         // 9) 최종 결과 저장 (유저 입장에서 1개의 자연스러운 답변)
         Message aiMessage = new Message(
+            sessionId,
             MessageRole.AI,
             total.toString(),
             (MessageMarkers) null,
@@ -159,7 +162,7 @@ public final class AiMessageService {
             new MessageMetadata(totalInputToken, totalOutputToken, endTime - startTime, lastReason)
         );
 
-        return MessageResponse.from(messageRepository.append(sessionId, aiMessage));
+        return MessageResponse.from(messageRepository.save(aiMessage));
     }
 
     private List<LlmMessage> buildContinueContext(List<LlmMessage> baseContext, String assistantSoFar) {
