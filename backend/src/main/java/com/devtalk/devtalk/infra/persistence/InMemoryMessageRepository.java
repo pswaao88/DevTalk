@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@Deprecated
 public class InMemoryMessageRepository implements MessageRepository {
     private final ConcurrentMap<String, List<Message>> messagesBySession = new ConcurrentHashMap<>();
 
     @Override
-    public Message append(String sessionId, Message message){
-        messagesBySession.putIfAbsent(sessionId, new ArrayList<>());
-        List<Message> messages = messagesBySession.get(sessionId);
+    public Message save(Message message){
+        messagesBySession.putIfAbsent(message.getSessionId(), new ArrayList<>());
+        List<Message> messages = messagesBySession.get(message.getSessionId());
         messages.add(message);
         return message;
     }

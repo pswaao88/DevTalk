@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@Deprecated
 public class InMemorySessionRepository implements SessionRepository {
 
     private final ConcurrentMap<String, Session> sessions = new ConcurrentHashMap<>();

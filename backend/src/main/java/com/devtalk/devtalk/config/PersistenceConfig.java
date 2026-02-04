@@ -10,13 +10,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class PersistenceConfig {
 
-    @Bean
-    public SessionRepository sessionRepository() {
-        return new InMemorySessionRepository();
-    }
-
-    @Bean
-    public MessageRepository messageRepository() {
-        return new InMemoryMessageRepository();
-    }
+//    @Bean
+//    public SessionRepository sessionRepository() {
+//        return new InMemorySessionRepository();
+//    }
+//
+//    @Bean
+//    public MessageRepository messageRepository() {
+//        return new InMemoryMessageRepository();
+//    }
 }

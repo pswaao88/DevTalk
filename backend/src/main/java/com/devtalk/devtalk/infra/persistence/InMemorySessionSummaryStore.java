@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Deprecated
 public final class InMemorySessionSummaryStore implements SessionSummaryStore {
 
     private static final String DEFAULT_SUMMARY =
