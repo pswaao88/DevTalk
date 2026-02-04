@@ -1,6 +1,7 @@
 package com.devtalk.devtalk.api.controller.devtalk.llm;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.service.llm.AiMessageService;
@@ -26,7 +27,7 @@ public class LlmControllerTest {
     @Test
     void makeAiMessage_returns_message_response() throws Exception {
         // given
-        MessageResponse response = new MessageResponse("message-1", MessageRole.USER, "테스트", null, MessageStatus.SUCCESS, LocalDateTime.now());
+        MessageResponse response = new MessageResponse("message-1", MessageRole.USER, "테스트", null, MessageStatus.SUCCESS, MessageMetadata.empty(), LocalDateTime.now());
         given(aiMessageService.generateAndSave("session-1")).willReturn(response);
 
         // when & then
