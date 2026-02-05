@@ -39,10 +39,15 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
+  const CHUNK_SIZE = 5; // 한번에 표시할 글자 수
+  const TYPING_SPEED = 15; // ms (30ms → 15ms)
+
   // 스트리밍 중인 AI 답변 (임시)
   const [streamingAiContent, setStreamingAiContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isDone, setIsDone] = useState(false); // 스트리밍은 끝났지만 타이핑 중
+
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   // 타이핑 애니메이션용
   const [typingQueue, setTypingQueue] = useState<string[]>([]);
@@ -50,6 +55,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const lastScrollTop = useRef<number>(0);
 
   useEffect(() => {
     loadSession();
@@ -98,7 +104,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
         setStreamingAiContent(prev => prev + firstChar);
         return rest;
       });
-    }, 30); // 30ms마다 한 글자씩 (속도 조절 가능: 20~50ms 권장)
+    }, TYPING_SPEED); // 30ms마다 한 글자씩 (속도 조절 가능: 20~50ms 권장)
 
     return () => {
       if (typingIntervalRef.current) {
@@ -108,8 +114,10 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   }, [typingQueue, isDone]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingAiContent]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, streamingAiContent, shouldAutoScroll]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -188,14 +196,16 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
         setStreamingAiContent(''); // 초기화
       });
 
-      // 📡 delta 이벤트 (실시간 텍스트 조각)
       eventSource.addEventListener('delta', (e) => {
         const deltaText = e.data;
         console.log('📝 Delta 수신:', deltaText);
 
-        // 받은 텍스트를 글자 단위로 큐에 추가
-        const chars = deltaText.split('');
-        setTypingQueue(prev => [...prev, ...chars]);
+        // 청크 단위로 쪼개기
+        const chunks: string[] = [];
+        for (let i = 0; i < deltaText.length; i += CHUNK_SIZE) {
+          chunks.push(deltaText.slice(i, i + CHUNK_SIZE));
+        }
+        setTypingQueue(prev => [...prev, ...chunks]);
       });
 
       // 📡 done 이벤트 (완료)
@@ -309,7 +319,34 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           </div>
 
           {/* 메시지 영역 */}
-          <div className="messages-area">
+          <div
+              className="messages-area"
+              onScroll={(e) => {
+                const target = e.currentTarget;
+                const currentScrollTop = target.scrollTop;
+                const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150;
+
+                // 스크롤 방향 감지
+                const isScrollingUp = currentScrollTop < lastScrollTop.current;
+
+                if (isScrollingUp) {
+                  // 위로 스크롤하면 자동 스크롤 즉시 비활성화
+                  setShouldAutoScroll(false);
+                } else if (isNearBottom) {
+                  // 아래로 스크롤하면서 맨 아래 근처에 도달하면 활성화
+                  setShouldAutoScroll(true);
+                }
+
+                lastScrollTop.current = currentScrollTop;
+              }}
+              onWheel={(e) => {
+                // 사용자가 휠로 위로 스크롤하면 자동 스크롤 비활성화
+                if (e.deltaY < 0) {
+                  setShouldAutoScroll(false);
+                }
+              }}
+              style={{ position: 'relative' }}
+          >
             {loading ? (
                 <div style={{ textAlign: 'center', color: '#999' }}>메시지 로딩 중...</div>
             ) : (
@@ -417,7 +454,17 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                 </>
             )}
           </div>
-
+          {/* 맨 아래로 버튼 - 입력창 바로 위 */}
+          <button
+              className={`scroll-to-bottom ${!shouldAutoScroll ? 'visible' : ''}`}
+              onClick={() => {
+                setShouldAutoScroll(true);
+                scrollToBottom();
+              }}
+              title="맨 아래로"
+          >
+            ↓
+          </button>
           {/* 입력 영역 */}
           <div className="input-area">
           <textarea
