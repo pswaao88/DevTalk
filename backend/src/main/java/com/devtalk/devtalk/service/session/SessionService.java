@@ -1,9 +1,11 @@
 package com.devtalk.devtalk.service.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
+import com.devtalk.devtalk.api.dto.request.UpdateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
+import com.devtalk.devtalk.api.dto.response.SessionUpdateResponse;
 import com.devtalk.devtalk.domain.llm.LlmTokenUsage;
 import com.devtalk.devtalk.domain.message.Message;
 import com.devtalk.devtalk.domain.message.MessageMetadata;
@@ -28,6 +30,17 @@ public class SessionService {
     public SessionResponse create(CreateSessionRequest createSessionRequest){
         Session session = new Session(createSessionRequest.title());
         return SessionResponse.from(sessionRepository.save(session));
+    }
+
+    public SessionUpdateResponse update(String sessionId, UpdateSessionRequest updateSessionRequest){
+        Session session = getSession(sessionId);
+        if(updateSessionRequest.title() != null){
+            session.updateTitle(updateSessionRequest.title());
+        }
+        if(updateSessionRequest.description() != null){
+            session.updateDescription(updateSessionRequest.description());
+        }
+        return SessionUpdateResponse.from(sessionRepository.save(session));
     }
 
     private Session getSession(String sessionId){
