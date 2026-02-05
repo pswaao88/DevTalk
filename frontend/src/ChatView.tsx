@@ -25,9 +25,18 @@ interface SessionResponse {
   lastUpdatedAt: string;
 }
 
+// 세션 목록 표시용 (왼쪽 사이드바)
+interface SessionSummary {
+  sessionId: string;
+  title: string;
+  status: 'ACTIVE' | 'RESOLVED';
+  lastUpdatedAt: string;
+}
+
 interface ChatViewProps {
   sessionId: string;
   onBack: () => void;
+  onSelectSession: (sessionId: string) => void; // ★ 세션 이동을 위한 prop 추가
 }
 
 /* ================= Constants & Utils ================= */
@@ -56,14 +65,20 @@ const markdownComponents = {
   )
 };
 
-function ChatView({ sessionId, onBack }: ChatViewProps) {
+function ChatView({ sessionId, onBack, onSelectSession }: ChatViewProps) {
   /* ================= State ================= */
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // 사이드바 상태 (왼쪽: 세션 목록, 오른쪽: 컨텍스트)
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false); // 기본 열림
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false); // 기본 닫힘
+
+  // 세션 목록 데이터 (왼쪽 사이드바용)
+  const [sessionList, setSessionList] = useState<SessionSummary[]>([]);
 
   const [streamingAiContent, setStreamingAiContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -83,7 +98,8 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   /* ================= Effects ================= */
   useEffect(() => {
     loadSession();
-    loadMessages(true); // 첫 진입 시에는 로딩 표시 (true)
+    loadMessages(true);
+    loadSessionList(); // 세션 목록도 함께 로드
 
     return () => {
       if (eventSourceRef.current) eventSourceRef.current.close();
@@ -91,16 +107,15 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     };
   }, [sessionId]);
 
-  // 타이핑 애니메이션 처리
+  // 타이핑 애니메이션
   useEffect(() => {
     if (typingQueue.length === 0) {
-      // 타이핑 큐가 비었고, 스트리밍이 완료되었으면 메시지 재조회
       if (isDone) {
         setIsStreaming(false);
         setStreamingAiContent('');
         setIsDone(false);
-        // ★ 중요: 여기서는 false를 넘겨서 로딩 화면 없이 조용히 갱신 ★
         loadMessages(false);
+        loadSessionList(); // 상태 변경 등이 있을 수 있으므로 목록 갱신
       }
       return;
     }
@@ -134,11 +149,37 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   }, [messages, streamingAiContent, shouldAutoScroll]);
 
-  /* ================= Handlers ================= */
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  /* ================= Helpers ================= */
+  const groupByDate = (sessions: SessionSummary[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const grouped: { [key: string]: SessionSummary[] } = {
+      '오늘': [],
+      '어제': [],
+      '이전': []
+    };
+
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.lastUpdatedAt);
+      sessionDate.setHours(0, 0, 0, 0);
+
+      if (sessionDate.getTime() === today.getTime()) {
+        grouped['오늘'].push(session);
+      } else if (sessionDate.getTime() === yesterday.getTime()) {
+        grouped['어제'].push(session);
+      } else {
+        grouped['이전'].push(session);
+      }
+    });
+
+    return grouped;
   };
 
+  /* ================= API Calls ================= */
   const loadSession = async () => {
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}`);
@@ -149,7 +190,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   };
 
-  // ★ 수정된 loadMessages: showLoading 파라미터 추가
   const loadMessages = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
@@ -160,6 +200,19 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
       console.error('메시지 로드 실패:', error);
     } finally {
       if (showLoading) setLoading(false);
+    }
+  };
+
+  const loadSessionList = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/sessions`);
+      const data = await response.json();
+      const sortedData = data.sort((a: SessionSummary, b: SessionSummary) => {
+        return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
+      });
+      setSessionList(sortedData);
+    } catch (error) {
+      console.error('세션 목록 로드 실패:', error);
     }
   };
 
@@ -195,9 +248,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
   const sendMessage = async () => {
     if (!input.trim() || sending) return;
-
-    // ★ 메시지를 보낼 때는 강제로 스크롤을 맨 아래로 내림
-    setShouldAutoScroll(true);
 
     const userMessage = input;
     setInput('');
@@ -277,6 +327,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
       setSession(prev => prev ? { ...prev, status: data.resolve.status } : null);
       setMessages(prev => [...prev, data.systemMessage]);
+      loadSessionList(); // 목록의 상태 아이콘 갱신을 위해
 
     } catch (error) {
       console.error('상태 변경 실패:', error);
@@ -290,20 +341,79 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   if (!session) {
     return <div style={{ padding: '20px', textAlign: 'center' }}>로딩 중...</div>;
   }
 
+  const groupedSessions = groupByDate(sessionList);
+
   return (
       <div className="chat-layout">
+        {/* ★ 왼쪽 사이드바 (세션 목록) ★ */}
+        <nav className={`sidebar ${!isLeftSidebarOpen ? 'closed' : ''}`} style={{ borderRight: '1px solid #e1e4e8', borderLeft: 'none' }}>
+          <div className="sidebar-inner">
+            <div className="logo" style={{ marginBottom: '20px' }}>DevTalk</div>
+
+            <div className="nav-group">
+              {Object.entries(groupedSessions).map(([dateLabel, list]) => {
+                if (list.length === 0) return null;
+                return (
+                    <div key={dateLabel} style={{ marginBottom: '20px' }}>
+                      <div className="date-divider">{dateLabel}</div>
+                      {list.map(s => (
+                          <div
+                              key={s.sessionId}
+                              className={`sidebar-session-item ${s.sessionId === sessionId ? 'active' : ''}`}
+                              onClick={() => onSelectSession(s.sessionId)}
+                              style={{
+                                backgroundColor: s.sessionId === sessionId ? '#e3f2fd' : 'transparent',
+                                fontWeight: s.sessionId === sessionId ? '600' : 'normal'
+                              }}
+                          >
+                            <span className="sidebar-session-title">{s.title}</span>
+                            <span className={`sidebar-session-status ${s.status.toLowerCase()}`}>
+                        {s.status === 'RESOLVED' ? '✓' : '○'}
+                      </span>
+                          </div>
+                      ))}
+                    </div>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+
+        {/* ========== Main Chat Area ========== */}
         <div className="chat-main">
           {/* Header */}
           <div className="chat-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button onClick={onBack} className="back-button">←</button>
-              <div>
+              {/* ★ 왼쪽 사이드바 토글 버튼 ★ */}
+              <button
+                  className={`sidebar-toggle-btn-left ${isLeftSidebarOpen ? 'active' : ''}`}
+                  onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+                  style={{ marginRight: '0' }}
+                  title="목록 토글"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                </svg>
+              </button>
+
+              <button onClick={onBack} className="back-button" title="홈으로">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+              </button>
+
+              <div style={{ marginLeft: '4px' }}>
                 <h2 className="chat-title">{session.title}</h2>
-                <span className="chat-session-id">Session ID: {session.sessionId}</span>
+                {/* <span className="chat-session-id">{session.sessionId}</span> */}
               </div>
             </div>
 
@@ -318,10 +428,11 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                 </button>
               </div>
 
+              {/* 오른쪽 사이드바 토글 */}
               <button
-                  className={`sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
-                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                  title={isSidebarOpen ? "사이드바 접기" : "사이드바 펼치기"}
+                  className={`sidebar-toggle-btn ${isRightSidebarOpen ? 'active' : ''}`}
+                  onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+                  title={isRightSidebarOpen ? "컨텍스트 접기" : "컨텍스트 펼치기"}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -337,7 +448,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
               onScroll={(e) => {
                 const target = e.currentTarget;
                 const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150;
-
                 if (target.scrollTop < lastScrollTop.current) {
                   setShouldAutoScroll(false);
                 } else if (isNearBottom) {
@@ -434,7 +544,8 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           </div>
         </div>
 
-        <div className={`chat-sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
+        {/* ========== Right Sidebar (Context) ========== */}
+        <div className={`chat-sidebar ${!isRightSidebarOpen ? 'closed' : ''}`}>
           <div className="sidebar-content-wrapper">
             <div className="sidebar-section">
               <h3 className="sidebar-title">CURRENT CONTEXT</h3>

@@ -32,15 +32,90 @@ body {
   width: 100%;
 }
 
-/* ==================== 사이드바 ==================== */
+/* ==================== 사이드바 (애니메이션 적용 수정) ==================== */
 .sidebar {
   width: var(--sidebar-width);
   background: #fff;
   border-right: 1px solid var(--border-color);
-  padding: 24px;
+  /* padding: 24px;  <-- 기존 패딩 제거 (내부 래퍼로 이동) */
+  padding: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 애니메이션 중 내용 넘침 방지 */
+
+  /* 부드러운 열고 닫기 트랜지션 */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+  border-color 0.3s ease;
+}
+
+/* 닫힌 상태 */
+.sidebar.closed {
+  width: 0;
+  border-right-color: transparent;
+}
+
+/* 사이드바 내부 래퍼 (내용물 너비 고정) */
+.sidebar-inner {
+  width: var(--sidebar-width); /* 부모가 줄어들어도 내용물 너비 유지 */
+  min-width: var(--sidebar-width);
+  padding: 24px;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==================== 메인 화면 토글 버튼 ==================== */
+.sidebar-toggle-btn-left {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-gray);
+  margin-right: 12px; /* 검색창과 간격 */
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-blue);
+  white-space: nowrap;
+}
+
+/* 1. 사이드바 내부 로고 */
+.sidebar .logo {
+  margin-bottom: 40px;
+}
+
+/* 2. 상단 바(Top Bar) 내부 로고 */
+.top-bar .logo {
+  margin-bottom: 0;      /* 사이드바용 여백 제거 */
+  margin-right: 20px;    /* 검색창과의 거리 확보 */
+  animation: fadeIn 0.3s ease; /* 부드럽게 등장 */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.sidebar-toggle-btn-left:hover {
+  background: #f8f9fa;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.sidebar-toggle-btn-left.active {
+  background: #e3f2fd;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
 }
 
 .logo {
