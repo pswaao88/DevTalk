@@ -18,7 +18,6 @@ interface SessionListProps {
 const API_BASE = 'http://localhost:8080/api/devtalk';
 
 function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
-  // ... (State들은 그대로 유지) ...
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -38,9 +37,6 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
   const [aiSummaryText, setAiSummaryText] = useState('');
   const [showAiSummary, setShowAiSummary] = useState(false);
 
-  // ... (useEffect, API 함수들, 핸들러 함수들 모두 기존 코드 그대로 유지) ...
-  // loadSessions, createNewSession, updateSession 등...
-
   useEffect(() => {
     loadSessions();
   }, [refreshTrigger]);
@@ -49,6 +45,9 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/sessions`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       const sortedData = data.sort((a: SessionSummary, b: SessionSummary) => {
         return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
@@ -61,25 +60,102 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
     }
   };
 
-  // ... (나머지 함수 생략 - 기존과 동일) ...
-  const handleNewSessionClick = () => { setShowTitleInput(true); setNewSessionTitle(''); };
-  const createNewSession = async () => { /* ... */ };
-  const cancelNewSession = () => { setShowTitleInput(false); setNewSessionTitle(''); };
-  const handleEditClick = (e: React.MouseEvent, session: SessionSummary) => {
-    e.stopPropagation(); setEditingSession(session); setEditTitle(session.title);
-    setEditDescription(session.description || ''); setAiSummaryText(session.aiSummary || '');
-    setShowAiSummary(false); setShowEditModal(true);
+  const handleNewSessionClick = () => {
+    setShowTitleInput(true);
+    setNewSessionTitle('');
   };
-  const updateSession = async () => { /* ... */ };
-  const cancelEdit = () => { setShowEditModal(false); setEditingSession(null); };
+
+  const cancelNewSession = () => {
+    setShowTitleInput(false);
+    setNewSessionTitle('');
+  };
+
+  // ★★★ [수정됨] 새 세션 생성 로직 복구 ★★★
+  const createNewSession = async () => {
+    if (!newSessionTitle.trim()) return;
+
+    setCreating(true);
+    try {
+      const response = await fetch(`${API_BASE}/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newSessionTitle }),
+      });
+
+      if (response.ok) {
+        setShowTitleInput(false);
+        setNewSessionTitle('');
+        await loadSessions(); // 목록 갱신
+      } else {
+        console.error('세션 생성 실패:', response.status);
+        alert('세션 생성에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('세션 생성 중 에러:', error);
+      alert('서버 요청 중 오류가 발생했습니다.');
+    } finally {
+      setCreating(false); // 버튼 잠금 해제
+    }
+  };
+
+  const handleEditClick = (e: React.MouseEvent, session: SessionSummary) => {
+    e.stopPropagation();
+    setEditingSession(session);
+    setEditTitle(session.title);
+    setEditDescription(session.description || '');
+    setAiSummaryText(session.aiSummary || '');
+    setShowAiSummary(false);
+    setShowEditModal(true);
+  };
+
+  const cancelEdit = () => {
+    setShowEditModal(false);
+    setEditingSession(null);
+  };
+
+  // ★★★ [수정됨] 세션 수정 로직 복구 ★★★
+  const updateSession = async () => {
+    if (!editingSession || !editTitle.trim()) return;
+
+    setUpdating(true);
+    try {
+      const response = await fetch(`${API_BASE}/sessions/${editingSession.sessionId}`, {
+        method: 'PATCH', // API 스펙에 따라 PUT일 수도 있음
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+        }),
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingSession(null);
+        await loadSessions(); // 목록 갱신
+      } else {
+        console.error('세션 수정 실패:', response.status);
+        alert('세션 수정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('세션 수정 중 에러:', error);
+      alert('서버 요청 중 오류가 발생했습니다.');
+    } finally {
+      setUpdating(false); // 버튼 잠금 해제
+    }
+  };
+
+  // AI 요약 핸들러들
   const handleViewAiSummary = () => { setShowAiSummary(true); };
   const handleGenerateAiSummary = () => { alert('🚧 추후 기능 추가 예정'); };
   const handleRegenerateAiSummary = () => { alert('🚧 추후 기능 추가 예정'); };
   const handleConfirmAiSummary = () => { alert('🚧 추후 기능 추가 예정'); };
+
+  // 유틸 함수들
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
+
   const groupByDate = (sessions: SessionSummary[]) => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -92,11 +168,13 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
     });
     return grouped;
   };
+
   const getRecentWeekSessions = (sessions: SessionSummary[]) => {
     const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0, 0, 0, 0);
     return sessions.filter(session => new Date(session.lastUpdatedAt) >= weekAgo);
   };
 
+  // 렌더링 준비
   const filteredSessions = sessions.filter(session =>
       session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       session.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -111,38 +189,69 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
 
   return (
       <div className="home-layout">
-        {/* 모달들 (기존 유지) */}
+        {/* 모달: 새 세션 */}
         {showTitleInput && (
             <div className="modal-overlay">
               <div className="modal-content">
                 <h3>새 세션 제목</h3>
-                <input type="text" className="title-input" placeholder="세션 제목을 입력하세요" value={newSessionTitle} onChange={(e) => setNewSessionTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createNewSession()} autoFocus />
+                <input
+                    type="text"
+                    className="title-input"
+                    placeholder="세션 제목을 입력하세요"
+                    value={newSessionTitle}
+                    onChange={(e) => setNewSessionTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && createNewSession()}
+                    autoFocus
+                />
                 <div className="modal-buttons">
                   <button onClick={cancelNewSession} className="btn-cancel">취소</button>
-                  <button onClick={createNewSession} className="btn-create" disabled={creating || !newSessionTitle.trim()}>{creating ? '생성 중...' : '생성'}</button>
+                  <button onClick={createNewSession} className="btn-create" disabled={creating || !newSessionTitle.trim()}>
+                    {creating ? '생성 중...' : '생성'}
+                  </button>
                 </div>
               </div>
             </div>
         )}
+
+        {/* 모달: 세션 편집 */}
         {showEditModal && editingSession && (
             <div className="modal-overlay">
               <div className="modal-content modal-large">
                 <h3>세션 편집</h3>
-                <div className="modal-section"><label className="modal-label">제목</label><input type="text" className="title-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} /></div>
-                <div className="modal-section"><label className="modal-label">설명 (선택)</label><textarea className="description-input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} /></div>
+                <div className="modal-section">
+                  <label className="modal-label">제목</label>
+                  <input type="text" className="title-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                </div>
+                <div className="modal-section">
+                  <label className="modal-label">설명 (선택)</label>
+                  <textarea className="description-input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} />
+                </div>
                 <div className="modal-section ai-summary-section">
                   <div className="ai-summary-header">
                     <label className="modal-label">🤖 AI 요약</label>
-                    <div className="ai-summary-buttons">{aiSummaryText ? <button onClick={handleViewAiSummary} className="btn-view-summary">{showAiSummary ? '요약 숨기기' : '요약 보기'}</button> : <button onClick={handleGenerateAiSummary} className="btn-generate-summary">AI 요약 생성하기</button>}</div>
+                    <div className="ai-summary-buttons">
+                      {aiSummaryText ?
+                          <button onClick={handleViewAiSummary} className="btn-view-summary">{showAiSummary ? '요약 숨기기' : '요약 보기'}</button> :
+                          <button onClick={handleGenerateAiSummary} className="btn-generate-summary">AI 요약 생성하기</button>
+                      }
+                    </div>
                   </div>
                   {showAiSummary && aiSummaryText && (
                       <div className="ai-summary-content">
                         <div className="ai-summary-box"><p>{aiSummaryText}</p></div>
-                        <div className="ai-summary-actions"><button onClick={handleRegenerateAiSummary} className="btn-regenerate">🔄 다시 요약하기</button><button onClick={handleConfirmAiSummary} className="btn-confirm">✓ 확정</button></div>
+                        <div className="ai-summary-actions">
+                          <button onClick={handleRegenerateAiSummary} className="btn-regenerate">🔄 다시 요약하기</button>
+                          <button onClick={handleConfirmAiSummary} className="btn-confirm">✓ 확정</button>
+                        </div>
                       </div>
                   )}
                 </div>
-                <div className="modal-buttons"><button onClick={cancelEdit} className="btn-cancel">취소</button><button onClick={updateSession} className="btn-create" disabled={updating || !editTitle.trim()}>{updating ? '저장 중...' : '저장'}</button></div>
+                <div className="modal-buttons">
+                  <button onClick={cancelEdit} className="btn-cancel">취소</button>
+                  <button onClick={updateSession} className="btn-create" disabled={updating || !editTitle.trim()}>
+                    {updating ? '저장 중...' : '저장'}
+                  </button>
+                </div>
               </div>
             </div>
         )}
@@ -174,8 +283,6 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
         {/* 메인 콘텐츠 */}
         <main className="main-content">
           <div className="top-bar">
-
-            {/* ★ 그룹화: 토글 버튼과 로고를 div로 묶어서 항상 같이 붙어있게 함 ★ */}
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <button
                   className={`sidebar-toggle-btn-left ${isSidebarOpen ? 'active' : ''}`}
@@ -187,8 +294,6 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
                   <line x1="9" y1="3" x2="9" y2="21" />
                 </svg>
               </button>
-
-              {/* 사이드바가 닫혔을 때만 로고 표시 */}
               {!isSidebarOpen && <div className="logo">DevTalk</div>}
             </div>
 
@@ -207,7 +312,6 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
             </button>
           </div>
 
-          {/* ... (이하 동일) ... */}
           <div className="content-scroll">
             <div className="section-header">
               <h2 className="section-title">최근 세션 (일주일)</h2>
@@ -220,12 +324,21 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
                   recentWeekSessions.map(session => (
                       <div key={session.sessionId} className="session-card" onClick={() => onSelectSession(session.sessionId)}>
                         <div className="card-header-row">
-                          <div className="card-meta"><span>{formatDateTime(session.lastUpdatedAt)}</span><span className={session.status === 'RESOLVED' ? 'status-resolved' : 'status-active'}>{session.status === 'RESOLVED' ? '✓' : '○'}</span></div>
+                          <div className="card-meta">
+                            <span>{formatDateTime(session.lastUpdatedAt)}</span>
+                            <span className={session.status === 'RESOLVED' ? 'status-resolved' : 'status-active'}>
+                              {session.status === 'RESOLVED' ? '✓' : '○'}
+                            </span>
+                          </div>
                           <button className="edit-button" onClick={(e) => handleEditClick(e, session)} title="편집">✏️</button>
                         </div>
                         <div className="card-title">{session.title}</div>
                         {session.description && <div className="card-description">{session.description}</div>}
-                        <div className="card-tags"><span className={`tag ${session.status === 'RESOLVED' ? 'tag-resolved' : 'tag-active'}`}>{session.status === 'RESOLVED' ? '해결됨' : '진행중'}</span></div>
+                        <div className="card-tags">
+                          <span className={`tag ${session.status === 'RESOLVED' ? 'tag-resolved' : 'tag-active'}`}>
+                            {session.status === 'RESOLVED' ? '해결됨' : '진행중'}
+                          </span>
+                        </div>
                       </div>
                   ))
               )}
