@@ -888,110 +888,71 @@ body {
   vertical-align: middle;
 }
 
-/* ==================== ★ 마크다운 콘텐츠 스타일링 (핵심 수정) ★ ==================== */
+/* ==================== ★ 마크다운 콘텐츠 스타일링 (간격 수정됨) ★ ==================== */
 .markdown-content {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
-  line-height: 1.7;
+  line-height: 1.5; /* 1.7 -> 1.5로 줄임 (줄 간격 축소) */
   word-wrap: break-word;
   color: #24292f;
+  font-size: 15px; /* 폰트 사이즈 명시 */
 }
 
 /* 1. 일반 텍스트 */
 .markdown-content p {
-  margin-bottom: 12px;
-  white-space: pre-wrap; /* 줄바꿈 보존 */
+  margin-bottom: 8px; /* 12px -> 8px (문단 간격 축소) */
+  white-space: pre-wrap;
 }
 .markdown-content p:last-child { margin-bottom: 0; }
 
-/* 2. 제목 (Header) - 리스트 밖 */
+/* 2. 제목 (Header) */
 .markdown-content h1, .markdown-content h2, .markdown-content h3,
 .markdown-content h4, .markdown-content h5, .markdown-content h6 {
-  margin-top: 24px;
-  margin-bottom: 12px;
+  margin-top: 16px;    /* 24px -> 16px (제목 위 간격 축소) */
+  margin-bottom: 8px;  /* 12px -> 8px */
   font-weight: 700;
   line-height: 1.3;
 }
-.markdown-content h1 { font-size: 1.6em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-content h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-content h3 { font-size: 1.25em; }
+.markdown-content h1 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.markdown-content h2 { font-size: 1.3em; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.markdown-content h3 { font-size: 1.15em; }
 
 /* 첫 번째 요소가 제목이면 상단 여백 제거 */
 .markdown-content > *:first-child { margin-top: 0 !important; }
 
-/* 3. 리스트 (ul, ol) */
+/* 3. 리스트 (ul, ol) - 전체적인 공백 축소 */
 .markdown-content ul,
 .markdown-content ol {
-  margin: 8px 0 16px 0;
-  padding-left: 24px;
+  margin: 4px 0 10px 0; /* 위아래 여백 축소 */
+  padding-left: 20px;   /* 들여쓰기 너비 약간 축소 */
 }
 
 .markdown-content li {
-  margin-bottom: 6px;
-  white-space: normal; /* 리스트 내부 줄바꿈 방지 */
+  margin-bottom: 2px; /* 6px -> 2px (리스트 아이템 간격 촘촘하게) */
+  white-space: normal;
 }
 
-/* ★★★ 리스트 내부 강제 인라인 처리 (핵심 해결책) ★★★ */
-/* 리스트 안에 제목이나 p 태그가 들어오면 줄바꿈 없이 번호 옆에 붙도록 강제함 */
+/* ★★★ 리스트 내부 강제 인라인 처리 (유지) ★★★ */
 .markdown-content li > p,
 .markdown-content li > h1, .markdown-content li > h2, .markdown-content li > h3,
 .markdown-content li > h4, .markdown-content li > h5, .markdown-content li > h6 {
-  display: inline !important; /* 블록 속성 제거 */
-  margin: 0 !important;       /* 여백 제거 */
-  font-size: 1em !important;  /* 폰트 크기를 리스트 텍스트에 맞춤 */
-  font-weight: 700;           /* 제목 강조 효과는 유지 */
-  line-height: inherit;
-}/* ==================== ★ 마크다운 콘텐츠 스타일링 (핵심 수정) ★ ==================== */
-.markdown-content {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
-  line-height: 1.7;
-  word-wrap: break-word;
-  color: #24292f;
-}
-
-/* 1. 일반 텍스트 */
-.markdown-content p {
-  margin-bottom: 12px;
-  white-space: pre-wrap; /* 줄바꿈 보존 */
-}
-.markdown-content p:last-child { margin-bottom: 0; }
-
-/* 2. 제목 (Header) - 리스트 밖 */
-.markdown-content h1, .markdown-content h2, .markdown-content h3,
-.markdown-content h4, .markdown-content h5, .markdown-content h6 {
-  margin-top: 24px;
-  margin-bottom: 12px;
+  display: inline !important;
+  margin: 0 !important;
+  font-size: 1em !important;
   font-weight: 700;
-  line-height: 1.3;
-}
-.markdown-content h1 { font-size: 1.6em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-content h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.markdown-content h3 { font-size: 1.25em; }
-
-/* 첫 번째 요소가 제목이면 상단 여백 제거 */
-.markdown-content > *:first-child { margin-top: 0 !important; }
-
-/* 3. 리스트 (ul, ol) */
-.markdown-content ul,
-.markdown-content ol {
-  margin: 8px 0 16px 0;
-  padding-left: 24px;
-}
-
-.markdown-content li {
-  margin-bottom: 6px;
-  white-space: normal; /* 리스트 내부 줄바꿈 방지 */
-}
-
-/* ★★★ 리스트 내부 강제 인라인 처리 (핵심 해결책) ★★★ */
-/* 리스트 안에 제목이나 p 태그가 들어오면 줄바꿈 없이 번호 옆에 붙도록 강제함 */
-.markdown-content li > p,
-.markdown-content li > h1, .markdown-content li > h2, .markdown-content li > h3,
-.markdown-content li > h4, .markdown-content li > h5, .markdown-content li > h6 {
-  display: inline !important; /* 블록 속성 제거 */
-  margin: 0 !important;       /* 여백 제거 */
-  font-size: 1em !important;  /* 폰트 크기를 리스트 텍스트에 맞춤 */
-  font-weight: 700;           /* 제목 강조 효과는 유지 */
   line-height: inherit;
+}
+
+/* 4. 코드 블록 */
+.markdown-content pre {
+  margin: 10px 0; /* 코드 블록 위아래 여백 축소 */
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #1e1e1e !important;
+}
+
+.markdown-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
 }
 /* ==================== 맨 아래로 버튼 ==================== */
 .scroll-to-bottom {
