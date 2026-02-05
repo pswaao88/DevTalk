@@ -1,10 +1,10 @@
-// src/ChatView.tsx
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+/* ================= Type Definitions ================= */
 type MessageRole = 'USER' | 'AI' | 'SYSTEM';
 type MessageStatus = 'SUCCESS' | 'FAILED';
 
@@ -30,52 +30,71 @@ interface ChatViewProps {
   onBack: () => void;
 }
 
+/* ================= Constants & Utils ================= */
 const API_BASE = 'http://localhost:8080/api/devtalk';
 
+const markdownComponents = {
+  code({ node, inline, className, children, ...props }: any) {
+    const match = /language-(\w+)/.exec(className || '');
+    return !inline && match ? (
+        <SyntaxHighlighter
+            style={vscDarkPlus}
+            language={match[1]}
+            PreTag="div"
+            {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+    ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+    );
+  },
+  img: ({node, ...props}: any) => (
+      <img style={{maxWidth: '100%', borderRadius: '8px'}} {...props} alt="content" />
+  )
+};
+
 function ChatView({ sessionId, onBack }: ChatViewProps) {
+  /* ================= State ================= */
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const CHUNK_SIZE = 5; // 한번에 표시할 글자 수
-  const TYPING_SPEED = 15; // ms (30ms → 15ms)
+  // 사이드바 토글 상태 (기본값: 닫힘)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // 스트리밍 중인 AI 답변 (임시)
   const [streamingAiContent, setStreamingAiContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isDone, setIsDone] = useState(false); // 스트리밍은 끝났지만 타이핑 중
-
+  const [isDone, setIsDone] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-
-  // 타이핑 애니메이션용
   const [typingQueue, setTypingQueue] = useState<string[]>([]);
-  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  /* ================= Refs ================= */
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const lastScrollTop = useRef<number>(0);
 
+  const CHUNK_SIZE = 5;
+  const TYPING_SPEED = 15;
+
+  /* ================= Effects ================= */
   useEffect(() => {
     loadSession();
     loadMessages();
 
-    // 컴포넌트 언마운트 시 SSE 연결 정리
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
+      if (eventSourceRef.current) eventSourceRef.current.close();
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     };
   }, [sessionId]);
 
-  // 타이핑 애니메이션 처리
   useEffect(() => {
     if (typingQueue.length === 0) {
-      // 타이핑 큐가 비었고, 스트리밍이 완료되었으면 메시지 재조회
       if (isDone) {
         setIsStreaming(false);
         setStreamingAiContent('');
@@ -85,9 +104,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
       return;
     }
 
-    if (typingIntervalRef.current) {
-      clearInterval(typingIntervalRef.current);
-    }
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
 
     typingIntervalRef.current = setInterval(() => {
       setTypingQueue(queue => {
@@ -98,18 +115,14 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           }
           return queue;
         }
-
-        // 큐에서 첫 글자 꺼내서 화면에 추가
         const [firstChar, ...rest] = queue;
         setStreamingAiContent(prev => prev + firstChar);
         return rest;
       });
-    }, TYPING_SPEED); // 30ms마다 한 글자씩 (속도 조절 가능: 20~50ms 권장)
+    }, TYPING_SPEED);
 
     return () => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     };
   }, [typingQueue, isDone]);
 
@@ -119,6 +132,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   }, [messages, streamingAiContent, shouldAutoScroll]);
 
+  /* ================= Handlers ================= */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -154,53 +168,31 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     setSending(true);
 
     try {
-      // ============================================
-      // 1️⃣ USER 메시지 저장
-      // ============================================
       const userResponse = await fetch(`${API_BASE}/sessions/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: userMessage, marker: null })
       });
 
-      if (!userResponse.ok) {
-        throw new Error('유저 메시지 저장 실패');
-      }
+      if (!userResponse.ok) throw new Error('유저 메시지 저장 실패');
 
       const userMsg = await userResponse.json();
       setMessages(prev => [...prev, userMsg]);
 
-      // ============================================
-      // 2️⃣ AI 스트리밍 시작
-      // ============================================
       setIsStreaming(true);
       setIsDone(false);
       setStreamingAiContent('');
       setTypingQueue([]);
 
-      // SSE 연결 생성
       const streamUrl = `${API_BASE}/sessions/${sessionId}/ai/stream?replyToUserMessageId=${userMsg.messageId}`;
-      console.log('🔗 SSE 연결 시도:', streamUrl);
-
       const eventSource = new EventSource(streamUrl);
       eventSourceRef.current = eventSource;
 
-      // 📡 연결 성공
-      eventSource.onopen = () => {
-        console.log('✅ SSE 연결 성공');
-      };
-
-      // 📡 start 이벤트
-      eventSource.addEventListener('start', (e) => {
-        console.log('🚀 스트리밍 시작:', e.data);
-        setStreamingAiContent(''); // 초기화
-      });
+      eventSource.onopen = () => console.log('✅ SSE 연결 성공');
+      eventSource.addEventListener('start', () => setStreamingAiContent(''));
 
       eventSource.addEventListener('delta', (e) => {
         const deltaText = e.data;
-        console.log('📝 Delta 수신:', deltaText);
-
-        // 청크 단위로 쪼개기
         const chunks: string[] = [];
         for (let i = 0; i < deltaText.length; i += CHUNK_SIZE) {
           chunks.push(deltaText.slice(i, i + CHUNK_SIZE));
@@ -208,50 +200,33 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
         setTypingQueue(prev => [...prev, ...chunks]);
       });
 
-      // 📡 done 이벤트 (완료)
       eventSource.addEventListener('done', () => {
-        console.log('✅ 스트리밍 완료 - 타이핑 대기 중');
         eventSource.close();
         eventSourceRef.current = null;
-
-        setIsDone(true); // 타이핑이 끝나면 자동으로 메시지 재조회됨
+        setIsDone(true);
       });
 
-      // 📡 일반 message 이벤트 (SSE 기본 이벤트)
-      eventSource.onmessage = (e) => {
-        console.log('💬 일반 message 이벤트:', e.data);
-      };
-
-      // 📡 error 이벤트
       eventSource.onerror = (error) => {
         console.error('❌ SSE 에러:', error);
-        console.log('SSE readyState:', eventSource.readyState);
         eventSource.close();
         eventSourceRef.current = null;
-
-        if (typingIntervalRef.current) {
-          clearInterval(typingIntervalRef.current);
-          typingIntervalRef.current = null;
-        }
-
         setIsStreaming(false);
         setIsDone(false);
-        setStreamingAiContent('');
-        setTypingQueue([]);
-
-        alert('AI 응답 생성 중 오류가 발생했습니다.');
+        setSending(false);
+        alert('AI 응답 중 오류 발생');
       };
 
     } catch (error) {
       console.error('메시지 전송 실패:', error);
-      alert('메시지 전송에 실패했습니다.');
+      alert('메시지 전송 실패');
+      setSending(false);
     } finally {
       setSending(false);
     }
   };
 
   const toggleResolve = async () => {
-    if (!session || isStreaming) return; // 스트리밍 중에는 상태 변경 막기
+    if (!session || isStreaming) return;
 
     const isResolved = session.status === 'RESOLVED';
     const endpoint = isResolved ? 'unresolved' : 'resolve';
@@ -267,7 +242,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
     } catch (error) {
       console.error('상태 변경 실패:', error);
-      alert('상태 변경에 실패했습니다.');
     }
   };
 
@@ -284,9 +258,9 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
   return (
       <div className="chat-layout">
-        {/* 메인 채팅 영역 */}
+        {/* ========== Main Chat Area ========== */}
         <div className="chat-main">
-          {/* 헤더 */}
+          {/* Header */}
           <div className="chat-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button onClick={onBack} className="back-button">←</button>
@@ -296,112 +270,73 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
               </div>
             </div>
 
-            {/* 상태 토글 버튼 그룹 */}
             <div className="status-toggle-container">
               <span className="status-label">상태</span>
               <div className={`toggle-switch ${session.status === 'RESOLVED' ? 'resolved' : 'active'} ${isStreaming ? 'disabled' : ''}`}>
-                <button
-                    className="toggle-option"
-                    onClick={toggleResolve}
-                    disabled={isStreaming}
-                >
+                <button className="toggle-option" onClick={toggleResolve} disabled={isStreaming}>
                   ○ 진행중
                 </button>
-                <button
-                    className="toggle-option"
-                    onClick={toggleResolve}
-                    disabled={isStreaming}
-                >
+                <button className="toggle-option" onClick={toggleResolve} disabled={isStreaming}>
                   ✓ 해결됨
                 </button>
               </div>
+
+              {/* ★ 사이드바 토글 버튼 추가 ★ */}
+              <button
+                  className={`sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  title={isSidebarOpen ? "사이드바 접기" : "사이드바 펼치기"}
+              >
+                {/* 오른쪽 사이드바 아이콘 SVG */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* 메시지 영역 */}
+          {/* Messages Area */}
           <div
               className="messages-area"
               onScroll={(e) => {
                 const target = e.currentTarget;
-                const currentScrollTop = target.scrollTop;
                 const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150;
 
-                // 스크롤 방향 감지
-                const isScrollingUp = currentScrollTop < lastScrollTop.current;
-
-                if (isScrollingUp) {
-                  // 위로 스크롤하면 자동 스크롤 즉시 비활성화
+                if (target.scrollTop < lastScrollTop.current) {
                   setShouldAutoScroll(false);
                 } else if (isNearBottom) {
-                  // 아래로 스크롤하면서 맨 아래 근처에 도달하면 활성화
                   setShouldAutoScroll(true);
                 }
-
-                lastScrollTop.current = currentScrollTop;
+                lastScrollTop.current = target.scrollTop;
               }}
-              onWheel={(e) => {
-                // 사용자가 휠로 위로 스크롤하면 자동 스크롤 비활성화
-                if (e.deltaY < 0) {
-                  setShouldAutoScroll(false);
-                }
-              }}
-              style={{ position: 'relative' }}
           >
             {loading ? (
-                <div style={{ textAlign: 'center', color: '#999' }}>메시지 로딩 중...</div>
+                <div style={{ textAlign: 'center', color: '#999', marginTop: '20px' }}>메시지 로딩 중...</div>
             ) : (
                 <>
-                  {/* 확정된 메시지들 */}
                   {messages.map(msg => {
                     if (msg.role === 'SYSTEM') {
-                      return (
-                          <div key={msg.messageId} className="system-message">
-                            {msg.content}
-                          </div>
-                      );
+                      return <div key={msg.messageId} className="system-message">{msg.content}</div>;
                     }
-
                     if (msg.role === 'USER') {
                       return (
                           <div key={msg.messageId} className="message-row user-row">
-                            <div className="message-bubble user-bubble">
-                              {msg.content}
-                            </div>
+                            <div className="message-bubble user-bubble">{msg.content}</div>
                           </div>
                       );
                     }
-
                     if (msg.role === 'AI') {
                       return (
                           <div key={msg.messageId} className="message-row ai-row">
                             <div className="ai-avatar">🤖</div>
                             <div className={`message-bubble ai-bubble markdown-content ${msg.status === 'FAILED' ? 'failed' : ''}`}>
                               {msg.status === 'FAILED' && (
-                                  <div style={{ color: '#c00', marginBottom: '8px', fontWeight: '600' }}>
-                                    ⚠️ AI 응답 실패
-                                  </div>
+                                  <div style={{ color: '#c00', marginBottom: '8px', fontWeight: '600' }}>⚠️ AI 응답 실패</div>
                               )}
                               <ReactMarkdown
                                   remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    code({ node, inline, className, children, ...props }) {
-                                      const match = /language-(\w+)/.exec(className || '');
-                                      return !inline && match ? (
-                                          <SyntaxHighlighter
-                                              style={vscDarkPlus}
-                                              language={match[1]}
-                                              PreTag="div"
-                                              {...props}
-                                          >
-                                            {String(children).replace(/\n$/, '')}
-                                          </SyntaxHighlighter>
-                                      ) : (
-                                          <code className={className} {...props}>
-                                            {children}
-                                          </code>
-                                      );
-                                    },
-                                  }}
+                                  components={markdownComponents}
                               >
                                 {msg.content}
                               </ReactMarkdown>
@@ -409,11 +344,10 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                           </div>
                       );
                     }
-
                     return null;
                   })}
 
-                  {/* 스트리밍 중인 AI 답변 (임시) */}
+                  {/* Streaming Content */}
                   {isStreaming && (
                       <div className="message-row ai-row">
                         <div className="ai-avatar">🤖</div>
@@ -423,25 +357,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                         }}>
                           <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
-                              components={{
-                                code({ node, inline, className, children, ...props }) {
-                                  const match = /language-(\w+)/.exec(className || '');
-                                  return !inline && match ? (
-                                      <SyntaxHighlighter
-                                          style={vscDarkPlus}
-                                          language={match[1]}
-                                          PreTag="div"
-                                          {...props}
-                                      >
-                                        {String(children).replace(/\n$/, '')}
-                                      </SyntaxHighlighter>
-                                  ) : (
-                                      <code className={className} {...props}>
-                                        {children}
-                                      </code>
-                                  );
-                                },
-                              }}
+                              components={markdownComponents}
                           >
                             {streamingAiContent || '생각 중...'}
                           </ReactMarkdown>
@@ -449,12 +365,11 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                         </div>
                       </div>
                   )}
-
                   <div ref={messagesEndRef} />
                 </>
             )}
           </div>
-          {/* 맨 아래로 버튼 - 입력창 바로 위 */}
+
           <button
               className={`scroll-to-bottom ${!shouldAutoScroll ? 'visible' : ''}`}
               onClick={() => {
@@ -465,13 +380,13 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           >
             ↓
           </button>
-          {/* 입력 영역 */}
+
           <div className="input-area">
           <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="생각을 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
+              placeholder="메시지를 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
               disabled={sending || isStreaming}
               className="message-input"
           />
@@ -485,22 +400,19 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           </div>
         </div>
 
-        {/* 오른쪽 사이드바 */}
-        <div className="chat-sidebar">
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">CURRENT CONTEXT</h3>
-            <div style={{
-              padding: '20px',
-              textAlign: 'center',
-              color: '#999',
-              fontSize: '14px'
-            }}>
-              <p>추후 구현 예정</p>
-              <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                자동 태그 추출<br/>
-                핵심 발견 사항<br/>
-                액션 아이템
-              </p>
+        {/* ========== Right Sidebar (Collapsible) ========== */}
+        <div className={`chat-sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
+          <div className="sidebar-content-wrapper">
+            <div className="sidebar-section">
+              <h3 className="sidebar-title">CURRENT CONTEXT</h3>
+              <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
+                <p>추후 구현 예정</p>
+                <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                  자동 태그 추출<br/>
+                  핵심 발견 사항<br/>
+                  액션 아이템
+                </p>
+              </div>
             </div>
           </div>
         </div>
