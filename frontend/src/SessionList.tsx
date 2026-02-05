@@ -158,23 +158,16 @@ function SessionList({ onSelectSession }: SessionListProps) {
   // AI 요약 생성
   const handleGenerateAiSummary = () => {
     alert('🚧 추후 기능 추가 예정\n\nAI가 세션 내용을 분석하여 요약을 생성합니다.');
-    // TODO: API 호출
-    // POST /api/devtalk/sessions/${sessionId}/summary/generate
   };
 
   // AI 요약 다시 생성
   const handleRegenerateAiSummary = () => {
     alert('🚧 추후 기능 추가 예정\n\n새로운 요약을 생성합니다.');
-    // TODO: API 호출
-    // POST /api/devtalk/sessions/${sessionId}/summary/regenerate
   };
 
   // AI 요약 확정
   const handleConfirmAiSummary = () => {
     alert('🚧 추후 기능 추가 예정\n\n요약 내용이 저장됩니다.');
-    // TODO: API 호출
-    // PUT /api/devtalk/sessions/${sessionId}/summary
-    // body: { aiSummary: aiSummaryText }
   };
 
   const formatDate = (dateString: string) => {
@@ -460,16 +453,14 @@ function SessionList({ onSelectSession }: SessionListProps) {
                           </button>
                         </div>
                         <div className="card-title">{session.title}</div>
+
+                        {/* ★ Key Finding(AI 요약) 부분 제거 및 설명(Description)만 표시 ★ */}
                         {session.description && (
                             <div className="card-description">
                               {session.description}
                             </div>
                         )}
-                        {session.aiSummary && (
-                            <div className="card-preview">
-                              Key Finding: {session.aiSummary}
-                            </div>
-                        )}
+
                         <div className="card-tags">
                     <span className={`tag ${session.status === 'RESOLVED' ? 'tag-resolved' : 'tag-active'}`}>
                       {session.status === 'RESOLVED' ? '해결됨' : '진행중'}

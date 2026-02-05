@@ -63,8 +63,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-
-  // 사이드바 토글 상태 (기본값: 닫힘)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [streamingAiContent, setStreamingAiContent] = useState('');
@@ -85,7 +83,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
   /* ================= Effects ================= */
   useEffect(() => {
     loadSession();
-    loadMessages();
+    loadMessages(true); // 첫 진입 시에는 로딩 표시 (true)
 
     return () => {
       if (eventSourceRef.current) eventSourceRef.current.close();
@@ -93,13 +91,16 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     };
   }, [sessionId]);
 
+  // 타이핑 애니메이션 처리
   useEffect(() => {
     if (typingQueue.length === 0) {
+      // 타이핑 큐가 비었고, 스트리밍이 완료되었으면 메시지 재조회
       if (isDone) {
         setIsStreaming(false);
         setStreamingAiContent('');
         setIsDone(false);
-        loadMessages();
+        // ★ 중요: 여기서는 false를 넘겨서 로딩 화면 없이 조용히 갱신 ★
+        loadMessages(false);
       }
       return;
     }
@@ -126,6 +127,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     };
   }, [typingQueue, isDone]);
 
+  // 자동 스크롤
   useEffect(() => {
     if (shouldAutoScroll) {
       scrollToBottom();
@@ -147,8 +149,9 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   };
 
-  const loadMessages = async () => {
-    setLoading(true);
+  // ★ 수정된 loadMessages: showLoading 파라미터 추가
+  const loadMessages = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages`);
       const data = await response.json();
@@ -156,12 +159,45 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     } catch (error) {
       console.error('메시지 로드 실패:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
+  };
+
+  const stopGeneration = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    setTypingQueue([]);
+
+    if (streamingAiContent) {
+      const stoppedMessage: MessageResponse = {
+        messageId: `stopped-${Date.now()}`,
+        role: 'AI',
+        content: streamingAiContent,
+        markers: null,
+        status: 'SUCCESS',
+        createdAt: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, stoppedMessage]);
+    }
+
+    setIsStreaming(false);
+    setStreamingAiContent('');
+    setIsDone(false);
+    setSending(false);
   };
 
   const sendMessage = async () => {
     if (!input.trim() || sending) return;
+
+    // ★ 메시지를 보낼 때는 강제로 스크롤을 맨 아래로 내림
+    setShouldAutoScroll(true);
 
     const userMessage = input;
     setInput('');
@@ -221,7 +257,9 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
       alert('메시지 전송 실패');
       setSending(false);
     } finally {
-      setSending(false);
+      if (!isStreaming) {
+        setSending(false);
+      }
     }
   };
 
@@ -258,7 +296,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
   return (
       <div className="chat-layout">
-        {/* ========== Main Chat Area ========== */}
         <div className="chat-main">
           {/* Header */}
           <div className="chat-header">
@@ -281,13 +318,11 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                 </button>
               </div>
 
-              {/* ★ 사이드바 토글 버튼 추가 ★ */}
               <button
                   className={`sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   title={isSidebarOpen ? "사이드바 접기" : "사이드바 펼치기"}
               >
-                {/* 오른쪽 사이드바 아이콘 SVG */}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                   <line x1="15" y1="3" x2="15" y2="21" />
@@ -347,7 +382,6 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                     return null;
                   })}
 
-                  {/* Streaming Content */}
                   {isStreaming && (
                       <div className="message-row ai-row">
                         <div className="ai-avatar">🤖</div>
@@ -387,20 +421,19 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="메시지를 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
-              disabled={sending || isStreaming}
+              disabled={sending && !isStreaming}
               className="message-input"
           />
             <button
-                onClick={sendMessage}
-                disabled={!input.trim() || sending || isStreaming}
-                className="send-button"
+                onClick={isStreaming ? stopGeneration : sendMessage}
+                disabled={sending || (!isStreaming && !input.trim())}
+                className={`send-button ${isStreaming ? 'stop' : ''}`}
             >
-              {isStreaming ? '생성 중' : '전송'}
+              {isStreaming ? '■ 중지' : '전송'}
             </button>
           </div>
         </div>
 
-        {/* ========== Right Sidebar (Collapsible) ========== */}
         <div className={`chat-sidebar ${!isSidebarOpen ? 'closed' : ''}`}>
           <div className="sidebar-content-wrapper">
             <div className="sidebar-section">

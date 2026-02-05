@@ -858,8 +858,19 @@ body {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 16px; /* 14px → 16px로 증가 */
+  font-size: 16px;
   height: 60px;
+  transition: background 0.2s; /* 트랜지션 추가 */
+}
+
+/* ★ 중지 버튼 스타일 추가 ★ */
+.send-button.stop {
+  background: #ff6b6b; /* 붉은색 계열 */
+  color: white;
+}
+
+.send-button.stop:hover {
+  background: #fa5252;
 }
 
 .send-button:hover:not(:disabled) {
