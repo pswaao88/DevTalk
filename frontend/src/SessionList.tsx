@@ -113,14 +113,34 @@ function SessionList({ onSelectSession, refreshTrigger }: SessionListProps) {
     setEditingSession(null);
   };
 
-  // ★★★ [수정됨] 세션 수정 로직 복구 ★★★
   const updateSession = async () => {
+    // 1. 기본 유효성 검사 (세션이 없거나 제목이 비었으면 중단)
     if (!editingSession || !editTitle.trim()) return;
 
-    setUpdating(true);
+    // 2. ★ 변경 사항 확인 로직 추가 ★
+    // 기존 데이터(editingSession)와 현재 입력창 데이터(editTitle, editDescription)를 비교합니다.
+    const currentTitle = editTitle.trim();
+    const originalTitle = editingSession.title;
+
+    // description은 null일 수 있으므로 빈 문자열로 치환하여 비교
+    const currentDesc = editDescription.trim();
+    const originalDesc = (editingSession.description || '').trim();
+
+    // 제목과 설명이 모두 기존과 똑같다면?
+    if (currentTitle === originalTitle && currentDesc === originalDesc) {
+      console.log('변경된 내용이 없어 요청을 보내지 않습니다.');
+      setShowEditModal(false);
+      setEditingSession(null);
+      return; // 여기서 함수 종료! (서버 요청 안 함)
+    }
+
+    setUpdating(true); // 버튼 비활성화
+
     try {
+      // 3. 서버 요청 (변경된 내용이 있을 때만 여기까지 옴)
+      // 백엔드 코드가 @PutMapping이므로 method를 'PUT'으로 설정
       const response = await fetch(`${API_BASE}/sessions/${editingSession.sessionId}`, {
-        method: 'PATCH', // API 스펙에 따라 PUT일 수도 있음
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: editTitle,
