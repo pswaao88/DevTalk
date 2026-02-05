@@ -33,6 +33,10 @@ public class Session {
         this.lastUpdatedAt = lastUpdatedAt;
     }
 
+    public void updateTitle(String title){this.title = title;}
+
+    public void updateDescription(String description){this.description = description;}
+
     // 해결시에 status 변경
     public void resolve(){
         this.status = SessionStatus.RESOLVED;
