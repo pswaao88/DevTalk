@@ -1,5 +1,6 @@
 package com.devtalk.devtalk.domain.session;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,4 +10,5 @@ public interface SessionRepository {
     boolean existsById(String sessionId);
     void deleteById(String sessionId);
     List<Session> findAll();
+    void updateLastAnalyzedAt(String sessionId, LocalDateTime analyzedAt);
 }
