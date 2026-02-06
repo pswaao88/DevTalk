@@ -10,6 +10,7 @@ public class Session {
     private String description;
     private String aiSummary;
     private final LocalDateTime createdAt;
+    private LocalDateTime lastAnalyzedAt;
     private LocalDateTime lastUpdatedAt;
 
     // 생성시에 createdAt 설정 및 id는 UUID 사용
@@ -46,6 +47,8 @@ public class Session {
         this.status = SessionStatus.ACTIVE;
     }
 
+    public void updateLastAnalyzedAt(LocalDateTime analyzedAt) { this.lastAnalyzedAt = analyzedAt; }
+
     public void updateLastUpdatedAt(){this.lastUpdatedAt = LocalDateTime.now(); }
 
     // 필드에 대한 getter
@@ -62,6 +65,8 @@ public class Session {
     public String getDescription() { return description; }
 
     public String getAiSummary() { return aiSummary; }
+
+    public LocalDateTime getLastAnalyzedAt() { return lastAnalyzedAt; }
 
     public LocalDateTime getLastUpdatedAt() { return lastUpdatedAt; }
 
