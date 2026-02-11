@@ -7,7 +7,8 @@ CREATE TABLE session (
                          status                VARCHAR(20)  NOT NULL,
                          description           TEXT,
                          ai_summary            TEXT,
-                         last_summarized_index INT DEFAULT 0, -- [추가] 요약 위치 기록용
+                         last_summarized_index INT DEFAULT 0,
+                         last_analyzed_at      DATETIME(6) DEFAULT NULL,
                          created_at            DATETIME(6)  NOT NULL,
                          last_updated_at       DATETIME(6)  NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

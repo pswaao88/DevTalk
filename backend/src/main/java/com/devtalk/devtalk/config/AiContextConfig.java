@@ -1,6 +1,5 @@
 package com.devtalk.devtalk.config;
 
-import com.devtalk.devtalk.infra.persistence.InMemorySessionSummaryStore;
 import com.devtalk.devtalk.service.llm.context.LlmPromptComposer;
 import com.devtalk.devtalk.domain.llm.context.DefaultTailSelector;
 import com.devtalk.devtalk.domain.llm.context.SessionSummaryStore;
