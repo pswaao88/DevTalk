@@ -1,9 +1,11 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
+import com.devtalk.devtalk.api.dto.request.UpdateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
+import com.devtalk.devtalk.api.dto.response.SessionUpdateResponse;
 import com.devtalk.devtalk.service.session.SessionService;
 import java.util.List;
 
@@ -11,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +41,11 @@ public class SessionController {
     @GetMapping()
     public ResponseEntity<List<SessionSummaryResponse>> getSessionList(){
         return ResponseEntity.ok(sessionService.getAllSession());
+    }
+
+    @PutMapping("/{sessionId}")
+    public ResponseEntity<SessionUpdateResponse> updateSession(@PathVariable("sessionId")String sessionId, @RequestBody UpdateSessionRequest updateSessionRequest){
+        return ResponseEntity.ok(sessionService.update(sessionId, updateSessionRequest));
     }
 
     @PostMapping("/{sessionId}/resolve")

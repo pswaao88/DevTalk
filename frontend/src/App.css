@@ -32,15 +32,90 @@ body {
   width: 100%;
 }
 
-/* ==================== 사이드바 ==================== */
+/* ==================== 사이드바 (애니메이션 적용 수정) ==================== */
 .sidebar {
   width: var(--sidebar-width);
   background: #fff;
   border-right: 1px solid var(--border-color);
-  padding: 24px;
+  /* padding: 24px;  <-- 기존 패딩 제거 (내부 래퍼로 이동) */
+  padding: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 애니메이션 중 내용 넘침 방지 */
+
+  /* 부드러운 열고 닫기 트랜지션 */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+  border-color 0.3s ease;
+}
+
+/* 닫힌 상태 */
+.sidebar.closed {
+  width: 0;
+  border-right-color: transparent;
+}
+
+/* 사이드바 내부 래퍼 (내용물 너비 고정) */
+.sidebar-inner {
+  width: var(--sidebar-width); /* 부모가 줄어들어도 내용물 너비 유지 */
+  min-width: var(--sidebar-width);
+  padding: 24px;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==================== 메인 화면 토글 버튼 ==================== */
+.sidebar-toggle-btn-left {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-gray);
+  margin-right: 12px; /* 검색창과 간격 */
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary-blue);
+  white-space: nowrap;
+}
+
+/* 1. 사이드바 내부 로고 */
+.sidebar .logo {
+  margin-bottom: 40px;
+}
+
+/* 2. 상단 바(Top Bar) 내부 로고 */
+.top-bar .logo {
+  margin-bottom: 0;      /* 사이드바용 여백 제거 */
+  margin-right: 20px;    /* 검색창과의 거리 확보 */
+  animation: fadeIn 0.3s ease; /* 부드럽게 등장 */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.sidebar-toggle-btn-left:hover {
+  background: #f8f9fa;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.sidebar-toggle-btn-left.active {
+  background: #e3f2fd;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
 }
 
 .logo {
@@ -570,14 +645,72 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border-color);
+  /* border-right: 1px solid var(--border-color);  <-- 기존 테두리 제거 */
+  position: relative;
+  min-width: 0; /* Flexbox 내에서 말줄임표 등이 정상 작동하도록 설정 */
 }
 
+/* 사이드바 트랜지션 및 스타일 수정 */
 .chat-sidebar {
   width: 320px;
   background: #f9f9f9;
+  /* padding: 20px;  <-- 패딩은 내부 컨텐츠 래퍼나 상태에 따라 조정 필요하므로 아래에서 제어 */
+  padding: 0;        /* 기본 패딩 0으로 시작 (내용물 래퍼에서 처리 or 열렸을 때 처리) */
+  overflow-y: hidden; /* 애니메이션 중 스크롤바 방지 */
+  border-left: 1px solid var(--border-color); /* 테두리를 사이드바 쪽으로 이동 */
+
+  /* 부드러운 열고 닫기 애니메이션 */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+  opacity 0.3s ease,
+  border-color 0.3s ease;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* 사이드바 내부 컨텐츠 래퍼 (애니메이션 중 내용 찌그러짐 방지) */
+.sidebar-content-wrapper {
+  width: 320px; /* 고정 너비 유지 */
   padding: 20px;
   overflow-y: auto;
+  height: 100%;
+}
+
+/* 닫힌 상태 (Closed) */
+.chat-sidebar.closed {
+  width: 0;
+  border-left-color: transparent; /* 테두리 숨김 */
+  opacity: 0;
+  pointer-events: none; /* 클릭 방지 */
+}
+
+/* 사이드바 토글 버튼 */
+.sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-gray);
+  transition: all 0.2s;
+  margin-left: 8px;
+  padding: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: #f0f0f0;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+
+.sidebar-toggle-btn.active {
+  background: #e3f2fd;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
 }
 
 .chat-header {
@@ -719,8 +852,8 @@ body {
   max-width: 70%;
   padding: 12px 16px;
   border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   word-break: break-word;
   white-space: pre-wrap;
 }
@@ -740,13 +873,26 @@ body {
   border: 1px solid #fcc;
 }
 
+/* src/App.css 수정 */
 .system-message {
-  text-align: center;
-  margin: 20px 0;
-  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 24px 0;
+  color: #868e96;
   font-size: 13px;
+  font-weight: 500;
 }
 
+/* 가상 요소를 사용해 양옆에 선 긋기 */
+.system-message::before,
+.system-message::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: #e9ecef; /* 선 색상 */
+  margin: 0 12px; /* 텍스트와 선 사이 간격 */
+}
 /* ==================== 입력 영역 ==================== */
 .input-area {
   padding: 16px 20px;
@@ -787,8 +933,19 @@ body {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 16px; /* 14px → 16px로 증가 */
+  font-size: 16px;
   height: 60px;
+  transition: background 0.2s; /* 트랜지션 추가 */
+}
+
+/* ★ 중지 버튼 스타일 추가 ★ */
+.send-button.stop {
+  background: #ff6b6b; /* 붉은색 계열 */
+  color: white;
+}
+
+.send-button.stop:hover {
+  background: #fa5252;
 }
 
 .send-button:hover:not(:disabled) {
@@ -887,157 +1044,103 @@ body {
   vertical-align: middle;
 }
 
-/* ==================== 마크다운 콘텐츠 스타일링 ==================== */
+/* ==================== ★ 마크다운 콘텐츠 스타일링 (간격 수정됨) ★ ==================== */
 .markdown-content {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
-  line-height: 1.6;
+  line-height: 1.5; /* 1.7 -> 1.5로 줄임 (줄 간격 축소) */
   word-wrap: break-word;
+  color: #24292f;
+  font-size: 15px; /* 폰트 사이즈 명시 */
 }
 
-.markdown-content h1,
-.markdown-content h2,
-.markdown-content h3,
-.markdown-content h4,
-.markdown-content h5,
-.markdown-content h6 {
-  margin-top: 20px;
-  margin-bottom: 12px;
-  font-weight: 600;
+/* 1. 일반 텍스트 */
+.markdown-content p {
+  margin-bottom: 8px; /* 12px -> 8px (문단 간격 축소) */
+  white-space: pre-wrap;
+}
+.markdown-content p:last-child { margin-bottom: 0; }
+
+/* 2. 제목 (Header) */
+.markdown-content h1, .markdown-content h2, .markdown-content h3,
+.markdown-content h4, .markdown-content h5, .markdown-content h6 {
+  margin-top: 16px;    /* 24px -> 16px (제목 위 간격 축소) */
+  margin-bottom: 8px;  /* 12px -> 8px */
+  font-weight: 700;
   line-height: 1.3;
 }
+.markdown-content h1 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.markdown-content h2 { font-size: 1.3em; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+.markdown-content h3 { font-size: 1.15em; }
 
-.markdown-content h1 { font-size: 1.8em; border-bottom: 2px solid #e1e4e8; padding-bottom: 8px; }
-.markdown-content h2 { font-size: 1.5em; border-bottom: 1px solid #e1e4e8; padding-bottom: 6px; }
-.markdown-content h3 { font-size: 1.3em; }
-.markdown-content h4 { font-size: 1.1em; }
+/* 첫 번째 요소가 제목이면 상단 여백 제거 */
+.markdown-content > *:first-child { margin-top: 0 !important; }
 
-.markdown-content p {
-  margin-bottom: 14px;
-}
-
+/* 3. 리스트 (ul, ol) - 전체적인 공백 축소 */
 .markdown-content ul,
 .markdown-content ol {
-  margin-bottom: 14px;
-  padding-left: 24px;
+  margin: 4px 0 10px 0; /* 위아래 여백 축소 */
+  padding-left: 20px;   /* 들여쓰기 너비 약간 축소 */
 }
 
 .markdown-content li {
-  margin-bottom: 6px;
+  margin-bottom: 2px; /* 6px -> 2px (리스트 아이템 간격 촘촘하게) */
+  white-space: normal;
 }
 
-.markdown-content ul ul,
-.markdown-content ol ul,
-.markdown-content ul ol,
-.markdown-content ol ol {
-  margin-top: 6px;
-  margin-bottom: 0;
+/* ★★★ 리스트 내부 강제 인라인 처리 (유지) ★★★ */
+.markdown-content li > p,
+.markdown-content li > h1, .markdown-content li > h2, .markdown-content li > h3,
+.markdown-content li > h4, .markdown-content li > h5, .markdown-content li > h6 {
+  display: inline !important;
+  margin: 0 !important;
+  font-size: 1em !important;
+  font-weight: 700;
+  line-height: inherit;
+}
+
+/* 4. 코드 블록 */
+.markdown-content pre {
+  margin: 10px 0; /* 코드 블록 위아래 여백 축소 */
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #1e1e1e !important;
 }
 
 .markdown-content code {
-  background: #f6f8fa;
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.9em;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  color: #e83e8c;
 }
-
-.markdown-content pre {
-  background: #1e1e1e;
-  border-radius: 8px;
-  padding: 16px;
-  overflow-x: auto;
-  margin: 12px 0;
-}
-
-.markdown-content pre code {
-  background: transparent;
-  padding: 0;
-  color: inherit;
-  font-size: 0.9em;
-  line-height: 1.5;
-}
-
-.markdown-content blockquote {
-  border-left: 4px solid #dfe2e5;
-  padding-left: 16px;
-  margin: 12px 0;
-  color: #6a737d;
-  font-style: italic;
-}
-
-.markdown-content table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 12px 0;
-}
-
-.markdown-content th,
-.markdown-content td {
-  border: 1px solid #dfe2e5;
-  padding: 8px 12px;
-  text-align: left;
-}
-
-.markdown-content th {
-  background: #f6f8fa;
-  font-weight: 600;
-}
-
-.markdown-content a {
-  color: #0366d6;
-  text-decoration: none;
-}
-
-.markdown-content a:hover {
-  text-decoration: underline;
-}
-
-.markdown-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 6px;
-  margin: 12px 0;
-}
-
-.markdown-content hr {
+/* ==================== 맨 아래로 버튼 ==================== */
+.scroll-to-bottom {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  color: white;
   border: none;
-  border-top: 2px solid #e1e4e8;
-  margin: 20px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  transition: all 0.3s ease;
+  z-index: 10;
+  opacity: 0;              /* 기본 숨김 */
+  pointer-events: none;    /* 클릭 차단 */
 }
 
-.markdown-content strong {
-  font-weight: 600;
+
+.scroll-to-bottom.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.markdown-content em {
-  font-style: italic;
-}
-
-/* 스트리밍 중일 때 마지막 요소 애니메이션 */
-.markdown-content.streaming > *:last-child {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* 코드 블록 스크롤바 스타일 */
-.markdown-content pre::-webkit-scrollbar {
-  height: 8px;
-}
-
-.markdown-content pre::-webkit-scrollbar-track {
-  background: #2d2d2d;
-}
-
-.markdown-content pre::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
-}
-
-.markdown-content pre::-webkit-scrollbar-thumb:hover {
-  background: #777;
+.scroll-to-bottom:hover {
+  background: #357ABD;
+  transform: translateX(-50%) scale(1.1);
 }

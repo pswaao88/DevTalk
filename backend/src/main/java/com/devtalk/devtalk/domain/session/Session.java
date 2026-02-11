@@ -10,6 +10,7 @@ public class Session {
     private String description;
     private String aiSummary;
     private final LocalDateTime createdAt;
+    private LocalDateTime lastAnalyzedAt;
     private LocalDateTime lastUpdatedAt;
 
     // 생성시에 createdAt 설정 및 id는 UUID 사용
@@ -22,6 +23,21 @@ public class Session {
         this.createdAt = LocalDateTime.now();
         this.lastUpdatedAt = LocalDateTime.now();
     }
+    // DB 매핑용 생성자
+    public Session(String sessionId, String title, SessionStatus status, String description, String aiSummary, LocalDateTime createdAt, LocalDateTime lastUpdatedAt) {
+        this.sessionId = sessionId;
+        this.title = title;
+        this.status = status;
+        this.description = description;
+        this.aiSummary = aiSummary;
+        this.createdAt = createdAt;
+        this.lastUpdatedAt = lastUpdatedAt;
+    }
+
+    public void updateTitle(String title){this.title = title;}
+
+    public void updateDescription(String description){this.description = description;}
+
     // 해결시에 status 변경
     public void resolve(){
         this.status = SessionStatus.RESOLVED;
@@ -30,6 +46,8 @@ public class Session {
     public void unresolved(){
         this.status = SessionStatus.ACTIVE;
     }
+
+    public void updateLastAnalyzedAt(LocalDateTime analyzedAt) { this.lastAnalyzedAt = analyzedAt; }
 
     public void updateLastUpdatedAt(){this.lastUpdatedAt = LocalDateTime.now(); }
 
@@ -47,6 +65,8 @@ public class Session {
     public String getDescription() { return description; }
 
     public String getAiSummary() { return aiSummary; }
+
+    public LocalDateTime getLastAnalyzedAt() { return lastAnalyzedAt; }
 
     public LocalDateTime getLastUpdatedAt() { return lastUpdatedAt; }
 

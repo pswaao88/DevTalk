@@ -8,6 +8,7 @@ import com.devtalk.devtalk.domain.llm.LlmOptions;
 import com.devtalk.devtalk.domain.llm.LlmRequest;
 import com.devtalk.devtalk.domain.llm.LlmResult;
 import com.devtalk.devtalk.domain.llm.LlmRole;
+import com.devtalk.devtalk.domain.llm.LlmTokenUsage;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +18,15 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 // infra에서 구현체를 구현해 계층을 분리 시켰기 때문에 따로 Gemini용 중첩 클래스를 활용해 구현
 // 하나의 어댑터의 역할로 service는 LlmClient만 알기 때문에 infra에서 gemini에 맞게 변경해 요청하는 역할
 public class GeminiHttpClient implements LlmClient {
+
+    private static final ObjectMapper om = new ObjectMapper();
+
     private final RestClient restClient;
     private final String apiKey;
     private final String model;
@@ -57,7 +63,7 @@ public class GeminiHttpClient implements LlmClient {
             // 응답에서 Text를 추출해 성공과 실패로 반환
             String text = response.extractFirstText();
             LlmFinishReason finishReason = mapFinishReason(response.firstFinishReasonRaw());
-
+            LlmTokenUsage tokenUsage = response.toTokenUsage();
             if (text == null || text.isBlank()) {
                 return LlmResult.Failure.of(
                     LlmFailureCode.PROVIDER_ERROR,
@@ -66,7 +72,7 @@ public class GeminiHttpClient implements LlmClient {
                 );
             }
 
-            return LlmResult.Success.of(text, finishReason);
+            return LlmResult.Success.of(text, finishReason, tokenUsage);
 
         } catch (ResourceAccessException e) {
             // 타임아웃/연결 실패 계열 처리
@@ -155,8 +161,9 @@ public class GeminiHttpClient implements LlmClient {
      * Gemini generateContent 응답
      * candidates[0].content.parts[0].text 를 주로 사용
      */
-    public record GeminiGenerateResponse(List<Candidate> candidates) {
+    public record GeminiGenerateResponse(List<Candidate> candidates, UsageMetadata usageMetadata) {
         public record Candidate(Content content, String finishReason) {}
+        public record UsageMetadata(int promptTokenCount, int candidatesTokenCount, int totalTokenCount){}
         public record Content(List<Part> parts) {}
         public record Part(String text) {}
 
@@ -179,6 +186,12 @@ public class GeminiHttpClient implements LlmClient {
             if (candidates == null || candidates.isEmpty()) return null;
             Candidate c = candidates.get(0);
             return (c == null) ? null : c.finishReason();
+        }
+
+        public LlmTokenUsage toTokenUsage() {
+            if (usageMetadata == null) return LlmTokenUsage.empty();
+
+            return new LlmTokenUsage(usageMetadata.promptTokenCount, usageMetadata.candidatesTokenCount);
         }
 
         public String safeDebug() {

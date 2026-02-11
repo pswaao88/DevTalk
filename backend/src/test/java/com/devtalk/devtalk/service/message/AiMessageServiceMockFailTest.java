@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
@@ -27,8 +28,8 @@ class AiMessageServiceMockFailTest {
     void mock_failure_creates_failed_ai_message() {
         String sessionId = "session-fail";
 
-        messageRepository.append(sessionId,
-            new Message(MessageRole.USER, "실패 테스트", null, MessageStatus.SUCCESS)
+        messageRepository.save(
+            new Message(sessionId, MessageRole.USER, "실패 테스트", null, MessageStatus.SUCCESS, MessageMetadata.empty())
         );
 
         MessageResponse ai = aiMessageService.generateAndSave(sessionId);

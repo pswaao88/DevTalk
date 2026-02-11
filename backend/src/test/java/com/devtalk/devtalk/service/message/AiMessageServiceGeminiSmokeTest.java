@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
 import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
@@ -32,8 +33,8 @@ class AiMessageServiceGeminiSmokeTest {
 
         String sessionId = "session-gemini";
 
-        messageRepository.append(sessionId,
-            new Message(MessageRole.USER, "한 문장으로 답해줘", null, MessageStatus.SUCCESS)
+        messageRepository.save(
+            new Message(sessionId, MessageRole.USER, "한 문장으로 답해줘", null, MessageStatus.SUCCESS, MessageMetadata.empty())
         );
 
         MessageResponse ai = aiMessageService.generateAndSave(sessionId);

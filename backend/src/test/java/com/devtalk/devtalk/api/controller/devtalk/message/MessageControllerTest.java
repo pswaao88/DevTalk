@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.devtalk.devtalk.api.dto.request.SendMessageRequest;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.service.message.MessageService;
@@ -48,6 +49,7 @@ public class MessageControllerTest {
                 "테스트",
                 null,
                 MessageStatus.SUCCESS,
+                MessageMetadata.empty(),
                 LocalDateTime.now()
             );
 
@@ -73,6 +75,7 @@ public class MessageControllerTest {
                 "테스트",
                 null,
                 MessageStatus.SUCCESS,
+                MessageMetadata.empty(),
                 LocalDateTime.now()
             );
 

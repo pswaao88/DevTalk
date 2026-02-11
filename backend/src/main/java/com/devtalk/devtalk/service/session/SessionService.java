@@ -1,10 +1,14 @@
 package com.devtalk.devtalk.service.session;
 
 import com.devtalk.devtalk.api.dto.request.CreateSessionRequest;
+import com.devtalk.devtalk.api.dto.request.UpdateSessionRequest;
 import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
+import com.devtalk.devtalk.api.dto.response.SessionUpdateResponse;
+import com.devtalk.devtalk.domain.llm.LlmTokenUsage;
 import com.devtalk.devtalk.domain.message.Message;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRepository;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
@@ -26,6 +30,17 @@ public class SessionService {
     public SessionResponse create(CreateSessionRequest createSessionRequest){
         Session session = new Session(createSessionRequest.title());
         return SessionResponse.from(sessionRepository.save(session));
+    }
+
+    public SessionUpdateResponse update(String sessionId, UpdateSessionRequest updateSessionRequest){
+        Session session = getSession(sessionId);
+        if(updateSessionRequest.title() != null){
+            session.updateTitle(updateSessionRequest.title());
+        }
+        if(updateSessionRequest.description() != null){
+            session.updateDescription(updateSessionRequest.description());
+        }
+        return SessionUpdateResponse.from(sessionRepository.save(session));
     }
 
     private Session getSession(String sessionId){
@@ -53,9 +68,10 @@ public class SessionService {
     public ResolveWithMessageResponse resolve(String sessionId){
         Session session = getSession(sessionId);
         session.resolve();
-        Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.SUCCESS);
+        sessionRepository.save(session);
+        Message systemMessage = new Message(sessionId, MessageRole.SYSTEM, "해당 세션이 Resolved로 변경되었습니다.", null, MessageStatus.SUCCESS,  MessageMetadata.empty());
         session.updateLastUpdatedAt();
-        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+        Message savedMessage = messageRepository.save(systemMessage);
 
         return ResolveWithMessageResponse.from(session, savedMessage);
     }
@@ -63,10 +79,11 @@ public class SessionService {
     public ResolveWithMessageResponse unresolve(String sessionId){
         Session session = getSession(sessionId);
         session.unresolved();
-        Message systemMessage = new Message(MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.SUCCESS);
+        sessionRepository.save(session);
+        Message systemMessage = new Message(sessionId, MessageRole.SYSTEM, "해당 세션이 Active로 변경되었습니다.", null, MessageStatus.SUCCESS, MessageMetadata.empty());
         session.updateLastUpdatedAt();
 
-        Message savedMessage = messageRepository.append(sessionId, systemMessage);
+        Message savedMessage = messageRepository.save(systemMessage);
         return ResolveWithMessageResponse.from(session, savedMessage);
     }
 }

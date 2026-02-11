@@ -1,6 +1,7 @@
 package com.devtalk.devtalk.api.controller.devtalk.session;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import com.devtalk.devtalk.api.dto.response.ResolveWithMessageResponse;
 import com.devtalk.devtalk.api.dto.response.SessionResponse;
 import com.devtalk.devtalk.api.dto.response.SessionSummaryResponse;
 import com.devtalk.devtalk.api.dto.response.MessageResponse;
+import com.devtalk.devtalk.domain.message.MessageMetadata;
 import com.devtalk.devtalk.domain.message.MessageRole;
 import com.devtalk.devtalk.domain.message.MessageStatus;
 import com.devtalk.devtalk.domain.session.SessionStatus;
@@ -132,6 +134,7 @@ public class SessionControllerTest {
                 "Resolved로 변경",
                 null,
                 MessageStatus.SUCCESS,
+                MessageMetadata.empty(),
                 LocalDateTime.now()
             );
 
@@ -166,6 +169,7 @@ public class SessionControllerTest {
                 "Unresolved로 변경",
                 null,
                 MessageStatus.SUCCESS,
+                MessageMetadata.empty(),
                 LocalDateTime.now()
             );
 

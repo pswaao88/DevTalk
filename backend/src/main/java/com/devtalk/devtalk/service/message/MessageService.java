@@ -21,10 +21,10 @@ public class MessageService {
 
     public MessageResponse append(String sessionId, SendMessageRequest sendMessageRequest){
         verifySession(sessionId);
-        Message message = SendMessageRequest.toDomain(sendMessageRequest);
+        Message message = sendMessageRequest.toDomain(sessionId);
         Session session = sessionRepository.findById(sessionId).get();
         session.updateLastUpdatedAt();
-        return MessageResponse.from(messageRepository.append(sessionId, message));
+        return MessageResponse.from(messageRepository.save(message));
     }
 
     public List<MessageResponse> getAll(String sessionId){

@@ -1,10 +1,10 @@
-// src/ChatView.tsx
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+/* ================= Type Definitions ================= */
 type MessageRole = 'USER' | 'AI' | 'SYSTEM';
 type MessageStatus = 'SUCCESS' | 'FAILED';
 
@@ -25,63 +25,114 @@ interface SessionResponse {
   lastUpdatedAt: string;
 }
 
+// 세션 목록 표시용 (왼쪽 사이드바)
+interface SessionSummary {
+  sessionId: string;
+  title: string;
+  status: 'ACTIVE' | 'RESOLVED';
+  lastUpdatedAt: string;
+}
+
 interface ChatViewProps {
   sessionId: string;
   onBack: () => void;
+  onSelectSession: (sessionId: string) => void; // ★ 세션 이동을 위한 prop 추가
 }
 
+/* ================= Constants & Utils ================= */
 const API_BASE = 'http://localhost:8080/api/devtalk';
 
-function ChatView({ sessionId, onBack }: ChatViewProps) {
+const markdownComponents = {
+  code({ node, inline, className, children, ...props }: any) {
+    const match = /language-(\w+)/.exec(className || '');
+    return !inline && match ? (
+        <SyntaxHighlighter
+            style={vscDarkPlus}
+            language={match[1]}
+            PreTag="div"
+            {...props}
+        >
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+    ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+    );
+  },
+  img: ({node, ...props}: any) => (
+      <img style={{maxWidth: '100%', borderRadius: '8px'}} {...props} alt="content" />
+  )
+};
+
+function ChatView({ sessionId, onBack, onSelectSession }: ChatViewProps) {
+  /* ================= State ================= */
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // 스트리밍 중인 AI 답변 (임시)
+  // 사이드바 상태 (왼쪽: 세션 목록, 오른쪽: 컨텍스트)
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(false); // 기본 열림
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false); // 기본 닫힘
+
+  // 세션 목록 데이터 (왼쪽 사이드바용)
+  const [sessionList, setSessionList] = useState<SessionSummary[]>([]);
+
   const [streamingAiContent, setStreamingAiContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isDone, setIsDone] = useState(false); // 스트리밍은 끝났지만 타이핑 중
-
-  // 타이핑 애니메이션용
+  const [isDone, setIsDone] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const [typingQueue, setTypingQueue] = useState<string[]>([]);
-  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  /* ================= Refs ================= */
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const lastScrollTop = useRef<number>(0);
 
+  const CHUNK_SIZE = 5;
+  const TYPING_SPEED = 15;
+
+  /* ================= Effects ================= */
   useEffect(() => {
     loadSession();
-    loadMessages();
+    loadMessages(true);
+    loadSessionList(); // 세션 목록도 함께 로드
 
-    // 컴포넌트 언마운트 시 SSE 연결 정리
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
+      if (eventSourceRef.current) eventSourceRef.current.close();
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     };
   }, [sessionId]);
 
-  // 타이핑 애니메이션 처리
+  // 타이핑 애니메이션
   useEffect(() => {
     if (typingQueue.length === 0) {
-      // 타이핑 큐가 비었고, 스트리밍이 완료되었으면 메시지 재조회
       if (isDone) {
+        setMessages(prev => [
+          ...prev,
+          {
+            messageId: `temp-${Date.now()}`, // 임시 ID
+            role: 'AI',
+            content: streamingAiContent,
+            markers: null,
+            status: 'SUCCESS',
+            createdAt: new Date().toISOString()
+          }
+        ]);
         setIsStreaming(false);
         setStreamingAiContent('');
         setIsDone(false);
-        loadMessages();
+        setShouldAutoScroll(true);
+        loadMessages(false);
+        loadSessionList(); // 상태 변경 등이 있을 수 있으므로 목록 갱신
       }
       return;
     }
 
-    if (typingIntervalRef.current) {
-      clearInterval(typingIntervalRef.current);
-    }
+    if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
 
     typingIntervalRef.current = setInterval(() => {
       setTypingQueue(queue => {
@@ -92,29 +143,55 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
           }
           return queue;
         }
-
-        // 큐에서 첫 글자 꺼내서 화면에 추가
         const [firstChar, ...rest] = queue;
         setStreamingAiContent(prev => prev + firstChar);
         return rest;
       });
-    }, 30); // 30ms마다 한 글자씩 (속도 조절 가능: 20~50ms 권장)
+    }, TYPING_SPEED);
 
     return () => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     };
   }, [typingQueue, isDone]);
 
+  // 자동 스크롤
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, streamingAiContent]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, streamingAiContent, shouldAutoScroll]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  /* ================= Helpers ================= */
+  const groupByDate = (sessions: SessionSummary[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const grouped: { [key: string]: SessionSummary[] } = {
+      '오늘': [],
+      '어제': [],
+      '이전': []
+    };
+
+    sessions.forEach(session => {
+      const sessionDate = new Date(session.lastUpdatedAt);
+      sessionDate.setHours(0, 0, 0, 0);
+
+      if (sessionDate.getTime() === today.getTime()) {
+        grouped['오늘'].push(session);
+      } else if (sessionDate.getTime() === yesterday.getTime()) {
+        grouped['어제'].push(session);
+      } else {
+        grouped['이전'].push(session);
+      }
+    });
+
+    return grouped;
   };
 
+  /* ================= API Calls ================= */
   const loadSession = async () => {
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}`);
@@ -125,8 +202,8 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   };
 
-  const loadMessages = async () => {
-    setLoading(true);
+  const loadMessages = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/sessions/${sessionId}/messages`);
       const data = await response.json();
@@ -134,114 +211,124 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     } catch (error) {
       console.error('메시지 로드 실패:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
+  };
+
+  const loadSessionList = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/sessions`);
+      const data = await response.json();
+      const sortedData = data.sort((a: SessionSummary, b: SessionSummary) => {
+        return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
+      });
+      setSessionList(sortedData);
+    } catch (error) {
+      console.error('세션 목록 로드 실패:', error);
+    }
+  };
+
+  const stopGeneration = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    setTypingQueue([]);
+
+    if (streamingAiContent) {
+      const stoppedMessage: MessageResponse = {
+        messageId: `stopped-${Date.now()}`,
+        role: 'AI',
+        content: streamingAiContent,
+        markers: null,
+        status: 'SUCCESS',
+        createdAt: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, stoppedMessage]);
+    }
+
+    setIsStreaming(false);
+    setStreamingAiContent('');
+    setIsDone(false);
+    setSending(false);
   };
 
   const sendMessage = async () => {
     if (!input.trim() || sending) return;
+
+    setShouldAutoScroll(true)
 
     const userMessage = input;
     setInput('');
     setSending(true);
 
     try {
-      // ============================================
-      // 1️⃣ USER 메시지 저장
-      // ============================================
       const userResponse = await fetch(`${API_BASE}/sessions/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: userMessage, marker: null })
       });
 
-      if (!userResponse.ok) {
-        throw new Error('유저 메시지 저장 실패');
-      }
+      if (!userResponse.ok) throw new Error('유저 메시지 저장 실패');
 
       const userMsg = await userResponse.json();
       setMessages(prev => [...prev, userMsg]);
 
-      // ============================================
-      // 2️⃣ AI 스트리밍 시작
-      // ============================================
       setIsStreaming(true);
       setIsDone(false);
       setStreamingAiContent('');
       setTypingQueue([]);
 
-      // SSE 연결 생성
       const streamUrl = `${API_BASE}/sessions/${sessionId}/ai/stream?replyToUserMessageId=${userMsg.messageId}`;
-      console.log('🔗 SSE 연결 시도:', streamUrl);
-
       const eventSource = new EventSource(streamUrl);
       eventSourceRef.current = eventSource;
 
-      // 📡 연결 성공
-      eventSource.onopen = () => {
-        console.log('✅ SSE 연결 성공');
-      };
+      eventSource.onopen = () => console.log('✅ SSE 연결 성공');
+      eventSource.addEventListener('start', () => setStreamingAiContent(''));
 
-      // 📡 start 이벤트
-      eventSource.addEventListener('start', (e) => {
-        console.log('🚀 스트리밍 시작:', e.data);
-        setStreamingAiContent(''); // 초기화
-      });
-
-      // 📡 delta 이벤트 (실시간 텍스트 조각)
       eventSource.addEventListener('delta', (e) => {
         const deltaText = e.data;
-        console.log('📝 Delta 수신:', deltaText);
-
-        // 받은 텍스트를 글자 단위로 큐에 추가
-        const chars = deltaText.split('');
-        setTypingQueue(prev => [...prev, ...chars]);
+        const chunks: string[] = [];
+        for (let i = 0; i < deltaText.length; i += CHUNK_SIZE) {
+          chunks.push(deltaText.slice(i, i + CHUNK_SIZE));
+        }
+        setTypingQueue(prev => [...prev, ...chunks]);
       });
 
-      // 📡 done 이벤트 (완료)
       eventSource.addEventListener('done', () => {
-        console.log('✅ 스트리밍 완료 - 타이핑 대기 중');
         eventSource.close();
         eventSourceRef.current = null;
-
-        setIsDone(true); // 타이핑이 끝나면 자동으로 메시지 재조회됨
+        setIsDone(true);
       });
 
-      // 📡 일반 message 이벤트 (SSE 기본 이벤트)
-      eventSource.onmessage = (e) => {
-        console.log('💬 일반 message 이벤트:', e.data);
-      };
-
-      // 📡 error 이벤트
       eventSource.onerror = (error) => {
         console.error('❌ SSE 에러:', error);
-        console.log('SSE readyState:', eventSource.readyState);
         eventSource.close();
         eventSourceRef.current = null;
-
-        if (typingIntervalRef.current) {
-          clearInterval(typingIntervalRef.current);
-          typingIntervalRef.current = null;
-        }
-
         setIsStreaming(false);
         setIsDone(false);
-        setStreamingAiContent('');
-        setTypingQueue([]);
-
-        alert('AI 응답 생성 중 오류가 발생했습니다.');
+        setSending(false);
+        alert('AI 응답 중 오류 발생');
       };
 
     } catch (error) {
       console.error('메시지 전송 실패:', error);
-      alert('메시지 전송에 실패했습니다.');
-    } finally {
+      alert('메시지 전송 실패');
       setSending(false);
+    } finally {
+      if (!isStreaming) {
+        setSending(false);
+      }
     }
   };
 
   const toggleResolve = async () => {
-    if (!session || isStreaming) return; // 스트리밍 중에는 상태 변경 막기
+    if (!session || isStreaming) return;
 
     const isResolved = session.status === 'RESOLVED';
     const endpoint = isResolved ? 'unresolved' : 'resolve';
@@ -254,10 +341,10 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
 
       setSession(prev => prev ? { ...prev, status: data.resolve.status } : null);
       setMessages(prev => [...prev, data.systemMessage]);
+      loadSessionList(); // 목록의 상태 아이콘 갱신을 위해
 
     } catch (error) {
       console.error('상태 변경 실패:', error);
-      alert('상태 변경에 실패했습니다.');
     }
   };
 
@@ -268,103 +355,147 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
     }
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   if (!session) {
     return <div style={{ padding: '20px', textAlign: 'center' }}>로딩 중...</div>;
   }
 
+  const groupedSessions = groupByDate(sessionList);
+
   return (
       <div className="chat-layout">
-        {/* 메인 채팅 영역 */}
+        {/* ★ 왼쪽 사이드바 (세션 목록) ★ */}
+        <nav className={`sidebar ${!isLeftSidebarOpen ? 'closed' : ''}`} style={{ borderRight: '1px solid #e1e4e8', borderLeft: 'none' }}>
+          <div className="sidebar-inner">
+            <div className="logo" style={{ marginBottom: '20px' }}>DevTalk</div>
+
+            <div className="nav-group">
+              {Object.entries(groupedSessions).map(([dateLabel, list]) => {
+                if (list.length === 0) return null;
+                return (
+                    <div key={dateLabel} style={{ marginBottom: '20px' }}>
+                      <div className="date-divider">{dateLabel}</div>
+                      {list.map(s => (
+                          <div
+                              key={s.sessionId}
+                              className={`sidebar-session-item ${s.sessionId === sessionId ? 'active' : ''}`}
+                              onClick={() => onSelectSession(s.sessionId)}
+                              style={{
+                                backgroundColor: s.sessionId === sessionId ? '#e3f2fd' : 'transparent',
+                                fontWeight: s.sessionId === sessionId ? '600' : 'normal'
+                              }}
+                          >
+                            <span className="sidebar-session-title">{s.title}</span>
+                            <span className={`sidebar-session-status ${s.status.toLowerCase()}`}>
+                        {s.status === 'RESOLVED' ? '✓' : '○'}
+                      </span>
+                          </div>
+                      ))}
+                    </div>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+
+        {/* ========== Main Chat Area ========== */}
         <div className="chat-main">
-          {/* 헤더 */}
+          {/* Header */}
           <div className="chat-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button onClick={onBack} className="back-button">←</button>
-              <div>
+              {/* ★ 왼쪽 사이드바 토글 버튼 ★ */}
+              <button
+                  className={`sidebar-toggle-btn-left ${isLeftSidebarOpen ? 'active' : ''}`}
+                  onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+                  style={{ marginRight: '0' }}
+                  title="목록 토글"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                </svg>
+              </button>
+
+              <button onClick={onBack} className="back-button" title="홈으로">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+              </button>
+
+              <div style={{ marginLeft: '4px' }}>
                 <h2 className="chat-title">{session.title}</h2>
-                <span className="chat-session-id">Session ID: {session.sessionId}</span>
+                {/* <span className="chat-session-id">{session.sessionId}</span> */}
               </div>
             </div>
 
-            {/* 상태 토글 버튼 그룹 */}
             <div className="status-toggle-container">
               <span className="status-label">상태</span>
               <div className={`toggle-switch ${session.status === 'RESOLVED' ? 'resolved' : 'active'} ${isStreaming ? 'disabled' : ''}`}>
-                <button
-                    className="toggle-option"
-                    onClick={toggleResolve}
-                    disabled={isStreaming}
-                >
+                <button className="toggle-option" onClick={toggleResolve} disabled={isStreaming}>
                   ○ 진행중
                 </button>
-                <button
-                    className="toggle-option"
-                    onClick={toggleResolve}
-                    disabled={isStreaming}
-                >
+                <button className="toggle-option" onClick={toggleResolve} disabled={isStreaming}>
                   ✓ 해결됨
                 </button>
               </div>
+
+              {/* 오른쪽 사이드바 토글 */}
+              <button
+                  className={`sidebar-toggle-btn ${isRightSidebarOpen ? 'active' : ''}`}
+                  onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+                  title={isRightSidebarOpen ? "컨텍스트 접기" : "컨텍스트 펼치기"}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* 메시지 영역 */}
-          <div className="messages-area">
+          {/* Messages Area */}
+          <div
+              className="messages-area"
+              onScroll={(e) => {
+                const target = e.currentTarget;
+                const isNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 150;
+                if (target.scrollTop < lastScrollTop.current) {
+                  setShouldAutoScroll(false);
+                } else if (isNearBottom) {
+                  setShouldAutoScroll(true);
+                }
+                lastScrollTop.current = target.scrollTop;
+              }}
+          >
             {loading ? (
-                <div style={{ textAlign: 'center', color: '#999' }}>메시지 로딩 중...</div>
+                <div style={{ textAlign: 'center', color: '#999', marginTop: '20px' }}>메시지 로딩 중...</div>
             ) : (
                 <>
-                  {/* 확정된 메시지들 */}
                   {messages.map(msg => {
                     if (msg.role === 'SYSTEM') {
-                      return (
-                          <div key={msg.messageId} className="system-message">
-                            {msg.content}
-                          </div>
-                      );
+                      return <div key={msg.messageId} className="system-message">{msg.content}</div>;
                     }
-
                     if (msg.role === 'USER') {
                       return (
                           <div key={msg.messageId} className="message-row user-row">
-                            <div className="message-bubble user-bubble">
-                              {msg.content}
-                            </div>
+                            <div className="message-bubble user-bubble">{msg.content}</div>
                           </div>
                       );
                     }
-
                     if (msg.role === 'AI') {
                       return (
                           <div key={msg.messageId} className="message-row ai-row">
                             <div className="ai-avatar">🤖</div>
                             <div className={`message-bubble ai-bubble markdown-content ${msg.status === 'FAILED' ? 'failed' : ''}`}>
                               {msg.status === 'FAILED' && (
-                                  <div style={{ color: '#c00', marginBottom: '8px', fontWeight: '600' }}>
-                                    ⚠️ AI 응답 실패
-                                  </div>
+                                  <div style={{ color: '#c00', marginBottom: '8px', fontWeight: '600' }}>⚠️ AI 응답 실패</div>
                               )}
                               <ReactMarkdown
                                   remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    code({ node, inline, className, children, ...props }) {
-                                      const match = /language-(\w+)/.exec(className || '');
-                                      return !inline && match ? (
-                                          <SyntaxHighlighter
-                                              style={vscDarkPlus}
-                                              language={match[1]}
-                                              PreTag="div"
-                                              {...props}
-                                          >
-                                            {String(children).replace(/\n$/, '')}
-                                          </SyntaxHighlighter>
-                                      ) : (
-                                          <code className={className} {...props}>
-                                            {children}
-                                          </code>
-                                      );
-                                    },
-                                  }}
+                                  components={markdownComponents}
                               >
                                 {msg.content}
                               </ReactMarkdown>
@@ -372,11 +503,9 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                           </div>
                       );
                     }
-
                     return null;
                   })}
 
-                  {/* 스트리밍 중인 AI 답변 (임시) */}
                   {isStreaming && (
                       <div className="message-row ai-row">
                         <div className="ai-avatar">🤖</div>
@@ -386,25 +515,7 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                         }}>
                           <ReactMarkdown
                               remarkPlugins={[remarkGfm]}
-                              components={{
-                                code({ node, inline, className, children, ...props }) {
-                                  const match = /language-(\w+)/.exec(className || '');
-                                  return !inline && match ? (
-                                      <SyntaxHighlighter
-                                          style={vscDarkPlus}
-                                          language={match[1]}
-                                          PreTag="div"
-                                          {...props}
-                                      >
-                                        {String(children).replace(/\n$/, '')}
-                                      </SyntaxHighlighter>
-                                  ) : (
-                                      <code className={className} {...props}>
-                                        {children}
-                                      </code>
-                                  );
-                                },
-                              }}
+                              components={markdownComponents}
                           >
                             {streamingAiContent || '생각 중...'}
                           </ReactMarkdown>
@@ -412,48 +523,54 @@ function ChatView({ sessionId, onBack }: ChatViewProps) {
                         </div>
                       </div>
                   )}
-
                   <div ref={messagesEndRef} />
                 </>
             )}
           </div>
 
-          {/* 입력 영역 */}
+          <button
+              className={`scroll-to-bottom ${!shouldAutoScroll ? 'visible' : ''}`}
+              onClick={() => {
+                setShouldAutoScroll(true);
+                scrollToBottom();
+              }}
+              title="맨 아래로"
+          >
+            ↓
+          </button>
+
           <div className="input-area">
           <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="생각을 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
-              disabled={sending || isStreaming}
+              placeholder="메시지를 입력하거나 코드를 붙여넣으세요 (Markdown 지원)"
+              disabled={sending && !isStreaming}
               className="message-input"
           />
             <button
-                onClick={sendMessage}
-                disabled={!input.trim() || sending || isStreaming}
-                className="send-button"
+                onClick={isStreaming ? stopGeneration : sendMessage}
+                disabled={sending || (!isStreaming && !input.trim())}
+                className={`send-button ${isStreaming ? 'stop' : ''}`}
             >
-              {isStreaming ? '생성 중' : '전송'}
+              {isStreaming ? '■ 중지' : '전송'}
             </button>
           </div>
         </div>
 
-        {/* 오른쪽 사이드바 */}
-        <div className="chat-sidebar">
-          <div className="sidebar-section">
-            <h3 className="sidebar-title">CURRENT CONTEXT</h3>
-            <div style={{
-              padding: '20px',
-              textAlign: 'center',
-              color: '#999',
-              fontSize: '14px'
-            }}>
-              <p>추후 구현 예정</p>
-              <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                자동 태그 추출<br/>
-                핵심 발견 사항<br/>
-                액션 아이템
-              </p>
+        {/* ========== Right Sidebar (Context) ========== */}
+        <div className={`chat-sidebar ${!isRightSidebarOpen ? 'closed' : ''}`}>
+          <div className="sidebar-content-wrapper">
+            <div className="sidebar-section">
+              <h3 className="sidebar-title">CURRENT CONTEXT</h3>
+              <div style={{ padding: '20px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
+                <p>추후 구현 예정</p>
+                <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                  자동 태그 추출<br/>
+                  핵심 발견 사항<br/>
+                  액션 아이템
+                </p>
+              </div>
             </div>
           </div>
         </div>
