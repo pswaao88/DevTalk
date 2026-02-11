@@ -111,9 +111,21 @@ function ChatView({ sessionId, onBack, onSelectSession }: ChatViewProps) {
   useEffect(() => {
     if (typingQueue.length === 0) {
       if (isDone) {
+        setMessages(prev => [
+          ...prev,
+          {
+            messageId: `temp-${Date.now()}`, // 임시 ID
+            role: 'AI',
+            content: streamingAiContent,
+            markers: null,
+            status: 'SUCCESS',
+            createdAt: new Date().toISOString()
+          }
+        ]);
         setIsStreaming(false);
         setStreamingAiContent('');
         setIsDone(false);
+        setShouldAutoScroll(true);
         loadMessages(false);
         loadSessionList(); // 상태 변경 등이 있을 수 있으므로 목록 갱신
       }
@@ -248,6 +260,8 @@ function ChatView({ sessionId, onBack, onSelectSession }: ChatViewProps) {
 
   const sendMessage = async () => {
     if (!input.trim() || sending) return;
+
+    setShouldAutoScroll(true)
 
     const userMessage = input;
     setInput('');
